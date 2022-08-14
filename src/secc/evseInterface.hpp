@@ -4,7 +4,7 @@
 #define REQUEST_RETRY_MAX       3       //向EVSE发送请求的最大重试次数
 #define EVSE_RESPONSE_TIMEOUT   5000    //接收EVSE回复的超时时间
 
-#include <Variants.h>
+//#include <Variants.h>
 #include <Arduino.h>
 #include <HardwareSerial.h>
 
