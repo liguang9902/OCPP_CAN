@@ -1,4 +1,4 @@
-#include <Variants.h>
+//#include <Variants.h>
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <WString.h>
@@ -26,6 +26,11 @@ using namespace ArduinoOcpp;
 #include <ArduinoOcpp/Core/OcppEngine.h>
 #include <ArduinoOcpp/Tasks/FirmwareManagement/FirmwareService.h>
 using ArduinoOcpp::Ocpp16::GetConfiguration;
+
+#include "ArduinoOcpp/Core/OcppModel.h"
+#include "ArduinoOcpp/Tasks/ChargePointStatus/ChargePointStatusService.h"
+
+OcppModel *OCPPM = new OcppModel(ArduinoOcpp::Clocks::DEFAULT_CLOCK);
 
 EMSECC::EMSECC(SECC_SPIClass *pCommIF)
 {
@@ -82,7 +87,7 @@ void EMSECC::getOcppConfiguration()
   //std::shared_ptr<std::vector<std::shared_ptr<AbstractConfiguration>>> configurationKeys;
   //configurationKeys = Ocpp16::getAllConfigurations();
   GetConfiguration getConfig;
-  DynamicJsonDocument *jsonConfig = getConfig.createConf();
+  std::unique_ptr<DynamicJsonDocument> jsonConfig = getConfig.createConf();
   string strConfig;
   //serializeJson(*jsonConfig, Serial);
   serializeJson(*jsonConfig, strConfig);
@@ -168,12 +173,13 @@ void EMSECC::seccInitialize(void *param)
                                    //ledcWrite(AMPERAGE_PIN, pwmVal);    //PWM Output?
                                  });
 
-    FirmwareService *firmwareService = getFirmwareService();
+    FirmwareService *firmwareService = OCPPM->getFirmwareService();
     firmwareService->setDownloadStatusSampler(this->proxyDownloadStatusSampler);
     //firmwareService->setOnDownload( this->proxyDownload );
     firmwareService->setOnDownload( 
-      [secc = this](String &location){
-        if (!FirmwareProxy::proxyDownload(location))
+      [secc = this](const std::string &location){
+        String location1 = location.c_str();
+        if (!FirmwareProxy::proxyDownload(location1))
         {
           return false;
         }
@@ -192,7 +198,7 @@ void EMSECC::seccInitialize(void *param)
           } 
           else
           {
-            String fileName = location.substring(location.lastIndexOf('/'));
+            String fileName = location1.substring(location1.lastIndexOf('/'));
             ESP_LOGW(TAG_EMSECC, "Firmware download success, LPC firmware[%s]" , fileName.c_str());
             SECC_State retState = secc->setFsmState(SECC_State_maintaining, fileName.c_str());
             ESP_LOGW(TAG_EMSECC, "SECC should be set to State:%s" , fsmName[retState].c_str());
@@ -202,6 +208,7 @@ void EMSECC::seccInitialize(void *param)
       });
 
       firmwareService->setInstallationStatusSampler(this->proxyInstallationStatusSampler);
+
       firmwareService->setOnInstall(this->proxyInstall);
   }
   else
@@ -287,9 +294,10 @@ void EMSECC::seccInitialize(void *param)
       uint64_t mac = ESP.getEfuseMac();
       String cpSerialNum = String((unsigned long)mac , 16);
       
-      String cpModel = String(CP_Model);
-      String cpVendor = String(CP_Vendor);
-
+      //String cpModel = String(CP_Model);
+      //String cpVendor = String(CP_Vendor);
+      const char *cpModel =String(CP_Model).c_str();
+      const char *cpVendor =String(CP_Vendor).c_str();
       bootNotification(cpModel , cpVendor , /*  cpSerialNum , */
                         [this](JsonObject confMsg)
                        {
@@ -439,7 +447,7 @@ void EMSECC::seccInitialize(void *param)
         authorizeState = STATE_AUTHORIZING;
         authStatus.authState = STATE_AUTHORIZING;
         authorize(
-            this->authStatus.rfidTag,
+            this->authStatus.rfidTag.c_str(),
             [this](JsonObject confMsg) //Confirm
             {
               string authConfirm;
@@ -595,7 +603,7 @@ void EMSECC::seccInitialize(void *param)
       if (tid < 0)
       {
         ESP_LOGW(TAG_EMSECC, "Start new Transaction");
-        startTransaction(
+        startTransaction(this->authStatus.rfidTag.c_str(),
             [this](JsonObject conf)
             {
               string authConfirm;
@@ -808,8 +816,8 @@ void EMSECC::seccInitialize(void *param)
     if((loopCount<200001) && (loopCount % 100000 == 0) && ( FirmwareProxy::proxyInstallationStatusSampler() == InstallationStatus::Installed )){
 
       ESP_LOGD(TAG_EMSECC,"Frmware installed , Wait reset request."); //reboot !
-      if (getChargePointStatusService() && getChargePointStatusService()->getConnector(0)) {
-          getChargePointStatusService()->getConnector(0)->setAvailability(true);
+      if (OCPPM->getChargePointStatusService() && OCPPM->getChargePointStatusService()->getConnector(0)) {
+          OCPPM->getChargePointStatusService()->getConnector(0)->setAvailability(true);
               Serial.println(F("[FirmwareProxy] Set Connector Availability."));
       }
       //It should confirm EVSE is getup!

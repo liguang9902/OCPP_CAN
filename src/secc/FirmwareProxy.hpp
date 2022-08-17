@@ -21,7 +21,7 @@ class FirmwareProxy{
         static bool proxyDownload(String &location);
         static String getDownloadFirmwareName();
         static InstallationStatus proxyInstallationStatusSampler();
-        static bool proxyInstall(String &location);   
+        static bool proxyInstall(const std::string &location);   
         static String getInstalledFirmwareName();  
 
 

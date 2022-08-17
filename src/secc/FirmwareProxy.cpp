@@ -7,6 +7,8 @@
 #include <esp_log.h>
 #include "FirmwareProxy.hpp"
 #include <Common.hpp>
+#include "ArduinoOcpp/Core/OcppModel.h"
+#include "ArduinoOcpp/Tasks/ChargePointStatus/ChargePointStatusService.h"
 
 using namespace ArduinoOcpp ;
 /*
@@ -176,9 +178,10 @@ InstallationStatus FirmwareProxy::proxyInstallationStatus = InstallationStatus::
 InstallationStatus FirmwareProxy::proxyInstallationStatusSampler(){
     return FirmwareProxy::proxyInstallationStatus;
 }
-bool FirmwareProxy::proxyInstall(String &location){
+bool FirmwareProxy::proxyInstall(const std::string &location){
+    String location1 = location.c_str();
     ESP_LOGD(TAG_PROXY, "UpgradeProxy Start Install firmware , URL:[%s]" , location.c_str());
-    String fileName = location.substring(location.lastIndexOf('/')+1);
+    String fileName = location1.substring(location1.lastIndexOf('/')+1);
     if(fileName.startsWith("LPC")){
         ESP_LOGD(TAG_PROXY, "Notify URL is  a firmware for LPC ,filename=%s  ,pass...(Exist?=%s) " , fileName.c_str() , USE_FS.exists('/'+fileName.c_str())?"True":"False");
         proxyInstallationStatus = InstallationStatus::Installed;
@@ -210,8 +213,10 @@ bool FirmwareProxy::proxyInstall(String &location){
             installedFirmwareName = fileName;
             Serial.println(F("[main] HTTP_UPDATE_OK"));
 
-            if (getChargePointStatusService() && getChargePointStatusService()->getConnector(0)) {
-                getChargePointStatusService()->getConnector(0)->setAvailability(true);
+           OcppModel *OCPPM = new OcppModel(ArduinoOcpp::Clocks::DEFAULT_CLOCK); 
+           //ChargePointStatusService* CPSS=OCPPM->getChargePointStatusService();
+            if (OCPPM->getChargePointStatusService() &&  OCPPM->getChargePointStatusService()->getConnector(0)) {
+                OCPPM->getChargePointStatusService()->getConnector(0)->setAvailability(true);
                     Serial.println(F("[FirmwareProxy] Set Connector Availability."));
             }
             sleep(2);

@@ -55,10 +55,10 @@ SECC_SPIClass * hspi = new SECC_SPIClass(HSPI);
 
 static void hw_init()
 {
-    /*Serial.begin(115200);
+    Serial.begin(115200);
     Serial.setDebugOutput(true);
 
-    //HardwareSerial ESP_Uart1(1);
+    /*//HardwareSerial ESP_Uart1(1);
     //begin(unsigned long baud, uint32_t config=SERIAL_8N1, int8_t rxPin=-1, int8_t txPin=-1, bool invert=false, unsigned long timeout_ms = 20000UL);
     pinMode(UART1_RX_PIN,INPUT_PULLUP);
     ESP_Uart1.begin(115200, SERIAL_8N1, UART1_RX_PIN, UART1_TX_PIN);
@@ -188,9 +188,9 @@ static void esp_initialize_sntp(void)
 {
     ESP_LOGI(TAG, "Initializing SNTP");
     // set timezone to China Standard Time
-    setenv("TZ", "CST-8", 1);
-    tzset();
-
+    //setenv("TZ", "CST-8", 1);
+    //tzset();
+    
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
     sntp_setservername(0, "pool.ntp.org");
     sntp_setservername(1, "cn.pool.ntp.org");
@@ -237,14 +237,16 @@ void setup() {
     String cpVendor = String(CP_Vendor);    
     String csUrl =  String(OCPP_URL)+cpVendor+'_'+cpModel+'_'+cpSerialNum ;
 
-    OCPP_initialize(OCPP_HOST, OCPP_PORT, csUrl);
+    String ocppHost = OCPP_HOST;
+    const char *ocpphost = ocppHost.c_str();
+    OCPP_initialize(ocpphost, OCPP_PORT, csUrl.c_str());
 
 
 
-
+    
     string ocpptimeString ;
     esp_get_Ocpptime( ocpptimeString );
-    ArduinoOcpp::OcppTime *ocppTime = ArduinoOcpp::getOcppTime();
+    ArduinoOcpp::OcppTime *ocppTime = new ArduinoOcpp::OcppTime(ArduinoOcpp::Clocks::DEFAULT_CLOCK);
     ocppTime->setOcppTime(ocpptimeString.c_str());
     sntp_stop();
 
