@@ -3,7 +3,7 @@
 #include <ArduinoJson.h>
 #include <WString.h>
 #include <FS.h>
-#include <ArduinoOcpp.h>
+#include <core/NewOCPP.h>
 #include <ArduinoOcpp/Tasks/SmartCharging/SmartChargingService.h>
 
 #include <esp_log.h>
@@ -298,7 +298,11 @@ void EMSECC::seccInitialize(void *param)
       //String cpVendor = String(CP_Vendor);
       const char *cpModel =String(CP_Model).c_str();
       const char *cpVendor =String(CP_Vendor).c_str();
-      bootNotification(cpModel , cpVendor , /*  cpSerialNum , */
+      //uint64_t mac = ESP.getEfuseMac();
+      //String cpSerialNum = String((unsigned long)mac , 16);
+      String csUrl =  String(OCPP_URL)+cpVendor+'_'+cpModel+'_'+cpSerialNum ;
+      String fwVersion = String("v0.0.1");
+      bootNotification(cpModel , cpVendor , cpSerialNum.c_str(), fwVersion.c_str(),
                         [this](JsonObject confMsg)
                        {
                          //This callback is executed when the .conf() response from the central system arrives

@@ -33,7 +33,7 @@ bool networkReady =  false;
 
 //ArduinoOcpp modules
 #include <ArduinoJson.h>
-#include <ArduinoOcpp.h>
+#include <core/NewOCPP.h>
 #include <ArduinoOcpp/Core/OcppEngine.h>
 #include <ArduinoOcpp/Core/Configuration.h>
 
