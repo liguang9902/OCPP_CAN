@@ -118,6 +118,7 @@ void authorize(const char *idTag, OnReceiveConfListener onConf = nullptr, OnAbor
 
 void bootNotification(const char *chargePointModel, const char *chargePointVendor, const char *cpVendor, const char *fwVersion,OnReceiveConfListener onConf = nullptr, OnAbortListener onAbort = nullptr, OnTimeoutListener onTimeout = nullptr, OnReceiveErrorListener onError = nullptr, std::unique_ptr<Timeout> timeout = nullptr);
 
+void bootNotification(const char *chargePointModel, const char *chargePointVendor, const char *cpVendor, const char *fwVersion,const char *chargeBoxSerialNumber,OnReceiveConfListener onConf = nullptr, OnAbortListener onAbort = nullptr, OnTimeoutListener onTimeout = nullptr, OnReceiveErrorListener onError = nullptr, std::unique_ptr<Timeout> timeout = nullptr);
 //The OCPP operation will include the given payload without modifying it. The library will delete the payload object after successful transmission.
 void bootNotification(DynamicJsonDocument *payload, OnReceiveConfListener onConf = nullptr, OnAbortListener onAbort = nullptr, OnTimeoutListener onTimeout = nullptr, OnReceiveErrorListener onError = nullptr, std::unique_ptr<Timeout> timeout = nullptr);
 
