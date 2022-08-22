@@ -30,7 +30,7 @@ using ArduinoOcpp::Ocpp16::GetConfiguration;
 #include "ArduinoOcpp/Core/OcppModel.h"
 #include "ArduinoOcpp/Tasks/ChargePointStatus/ChargePointStatusService.h"
 
-OcppModel *OCPPM = new OcppModel(ArduinoOcpp::Clocks::DEFAULT_CLOCK);
+//OcppModel *OCPPM = new OcppModel(ArduinoOcpp::Clocks::DEFAULT_CLOCK);
 
 EMSECC::EMSECC(SECC_SPIClass *pCommIF)
 {
@@ -87,7 +87,7 @@ void EMSECC::getOcppConfiguration()
   //std::shared_ptr<std::vector<std::shared_ptr<AbstractConfiguration>>> configurationKeys;
   //configurationKeys = Ocpp16::getAllConfigurations();
   GetConfiguration getConfig;
-  std::unique_ptr<DynamicJsonDocument> jsonConfig = getConfig.createConf();
+  std::unique_ptr<DynamicJsonDocument> jsonConfig = getConfig.createConf();//111
   string strConfig;
   //serializeJson(*jsonConfig, Serial);
   serializeJson(*jsonConfig, strConfig);
@@ -173,7 +173,7 @@ void EMSECC::seccInitialize(void *param)
                                    //ledcWrite(AMPERAGE_PIN, pwmVal);    //PWM Output?
                                  });
 
-    FirmwareService *firmwareService = OCPPM->getFirmwareService();
+    FirmwareService *firmwareService = getFirmwareService();
     firmwareService->setDownloadStatusSampler(this->proxyDownloadStatusSampler);
     //firmwareService->setOnDownload( this->proxyDownload );
     firmwareService->setOnDownload( 
@@ -293,16 +293,11 @@ void EMSECC::seccInitialize(void *param)
 
       uint64_t mac = ESP.getEfuseMac();
       String cpSerialNum = String((unsigned long)mac , 16);
-      
-      //String cpModel = String(CP_Model);
-      //String cpVendor = String(CP_Vendor);
-      const char *cpModel =String(CP_Model).c_str();
-      const char *cpVendor =String(CP_Vendor).c_str();
-      //uint64_t mac = ESP.getEfuseMac();
-      //String cpSerialNum = String((unsigned long)mac , 16);
+      String cpModel = String(CP_Model);
+      String cpVendor = String(CP_Vendor);    
       String csUrl =  String(OCPP_URL)+cpVendor+'_'+cpModel+'_'+cpSerialNum ;
       String fwVersion = String("v0.0.1");
-      bootNotification(cpModel , cpVendor , cpSerialNum.c_str(), fwVersion.c_str(),
+      bootNotification(cpModel.c_str() , cpVendor.c_str() , cpSerialNum.c_str(), fwVersion.c_str(),
                         [this](JsonObject confMsg)
                        {
                          //This callback is executed when the .conf() response from the central system arrives
@@ -820,8 +815,9 @@ void EMSECC::seccInitialize(void *param)
     if((loopCount<200001) && (loopCount % 100000 == 0) && ( FirmwareProxy::proxyInstallationStatusSampler() == InstallationStatus::Installed )){
 
       ESP_LOGD(TAG_EMSECC,"Frmware installed , Wait reset request."); //reboot !
-      if (OCPPM->getChargePointStatusService() && OCPPM->getChargePointStatusService()->getConnector(0)) {
-          OCPPM->getChargePointStatusService()->getConnector(0)->setAvailability(true);
+      ArduinoOcpp::ChargePointStatusService *CPSS = getChargePointStatusService();
+      if (CPSS && CPSS->getConnector(0)) {
+          CPSS->getConnector(0)->setAvailability(true);
               Serial.println(F("[FirmwareProxy] Set Connector Availability."));
       }
       //It should confirm EVSE is getup!

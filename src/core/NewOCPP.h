@@ -156,7 +156,7 @@ const char *getSessionIdTag();
  * Configure the device management
  */
 
-#if defined(AO_CUSTOM_UPDATER) || defined(AO_CUSTOM_WS)
+//#if defined(AO_CUSTOM_UPDATER) || defined(AO_CUSTOM_WS)
 #include <ArduinoOcpp/Tasks/FirmwareManagement/FirmwareService.h>
 // You need to configure this object if FW updates are relevant for you. This project already
 // brings a simple configuration for the ESP32 and ESP8266 for prototyping purposes, however
@@ -164,7 +164,13 @@ const char *getSessionIdTag();
 // OCPP backend.
 // See  ArduinoOcpp/Tasks/FirmwareManagement/FirmwareService.h 
 ArduinoOcpp::FirmwareService *getFirmwareService();
-#endif
+//#endif
+
+#include "ArduinoOcpp/Tasks/ChargePointStatus/ChargePointStatusService.h"
+
+ArduinoOcpp::ChargePointStatusService *getChargePointStatusService();
+
+
 
 #if defined(AO_CUSTOM_DIAGNOSTICS) || defined(AO_CUSTOM_WS)
 #include <ArduinoOcpp/Tasks/Diagnostics/DiagnosticsService.h>

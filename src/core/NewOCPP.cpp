@@ -491,12 +491,18 @@ const char *getSessionIdTag() {
     return connector->getSessionIdTag();
 }
 
-#if defined(AO_CUSTOM_UPDATER) || defined(AO_CUSTOM_WS)
+//#if defined(AO_CUSTOM_UPDATER) || defined(AO_CUSTOM_WS)
 ArduinoOcpp::FirmwareService *getFirmwareService() {
     auto& model = ocppEngine->getOcppModel();
     return model.getFirmwareService();
 }
-#endif
+//#endif
+
+ArduinoOcpp::ChargePointStatusService *getChargePointStatusService(){
+    auto& model = ocppEngine->getOcppModel();
+    return model.getChargePointStatusService();
+}
+
 
 #if defined(AO_CUSTOM_DIAGNOSTICS) || defined(AO_CUSTOM_WS)
 ArduinoOcpp::DiagnosticsService *getDiagnosticsService() {

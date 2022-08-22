@@ -9,6 +9,7 @@
 #include <Common.hpp>
 #include "ArduinoOcpp/Core/OcppModel.h"
 #include "ArduinoOcpp/Tasks/ChargePointStatus/ChargePointStatusService.h"
+#include "core/NewOCPP.h"
 
 using namespace ArduinoOcpp ;
 /*
@@ -213,10 +214,11 @@ bool FirmwareProxy::proxyInstall(const std::string &location){
             installedFirmwareName = fileName;
             Serial.println(F("[main] HTTP_UPDATE_OK"));
 
-           OcppModel *OCPPM = new OcppModel(ArduinoOcpp::Clocks::DEFAULT_CLOCK); 
+           //OcppModel *OCPPM = new OcppModel(ArduinoOcpp::Clocks::DEFAULT_CLOCK); 
            //ChargePointStatusService* CPSS=OCPPM->getChargePointStatusService();
-            if (OCPPM->getChargePointStatusService() &&  OCPPM->getChargePointStatusService()->getConnector(0)) {
-                OCPPM->getChargePointStatusService()->getConnector(0)->setAvailability(true);
+           ArduinoOcpp::ChargePointStatusService *CPSS = getChargePointStatusService();
+            if (CPSS &&  CPSS->getConnector(0)) {
+                CPSS->getConnector(0)->setAvailability(true);
                     Serial.println(F("[FirmwareProxy] Set Connector Availability."));
             }
             sleep(2);
