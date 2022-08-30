@@ -259,12 +259,11 @@ void setup() {
                        //this->evseIsBooted = true;
                        //esp_set_OcppTime(confMsg["currentTime"].as<const char *>());
                      }); */
-
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   
   emSecc->secc_loop();
-  OCPP_loop();
+  OCPP_loop(); 
 }

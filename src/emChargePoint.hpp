@@ -52,5 +52,9 @@
 #define CP_Vendor       "enrgmax"
 #define FWVersion       "v0.0.2"
 #define CBSerialNum     "1276gjadg"
+#define ICCID           "idntt"
+#define IMSI            "fsf"
+#define MSerialNumber   "32"
+#define MType           "mi"
 
 #endif

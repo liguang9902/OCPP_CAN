@@ -30,6 +30,8 @@ using ArduinoOcpp::Ocpp16::GetConfiguration;
 #include "ArduinoOcpp/Core/OcppModel.h"
 #include "ArduinoOcpp/Tasks/ChargePointStatus/ChargePointStatusService.h"
 
+#include "secc/SECCtest.h"
+
 EMSECC::EMSECC(SECC_SPIClass *pCommIF)
 {
   this->evIsLock = false;
@@ -170,7 +172,18 @@ void EMSECC::seccInitialize(void *param)
                                    }
                                    //ledcWrite(AMPERAGE_PIN, pwmVal);    //PWM Output?
                                  });
-
+    setOnResetSendConf([] (JsonObject payload) 
+                                  {
+                                    if (getTransactionId() >= 0)
+                                    stopTransaction();
+                                  
+                                  //ulong reboot_timestamp = millis();
+                                  //ulong scheduleReboot = 5000;
+                                  if (1) {
+                                    sleep(5);
+                                    ESP.restart();
+                                  }
+                                  });
     FirmwareService *firmwareService = getFirmwareService();
     firmwareService->setDownloadStatusSampler(this->proxyDownloadStatusSampler);
     //firmwareService->setOnDownload( this->proxyDownload );
@@ -235,7 +248,8 @@ void EMSECC::seccInitialize(void *param)
       };
 
       ResponsePayloadEVSE_getTime resGettime;
-      retCode = emEVSE->receiveResponse(resGettime);
+      //retCode = emEVSE->receiveResponse(resGettime);
+      retCode = receiveRGettime(resGettime);
       if (retCode != COMM_SUCCESS)
       {
         ESP_LOGE(TAG_EMSECC, "Receive Response_getTime error!\r\n");
@@ -261,10 +275,11 @@ void EMSECC::seccInitialize(void *param)
       };
 
       ResponsePayloadEVSE_getConfig resGetConfig;
-      retCode = emEVSE->receiveResponse(resGetConfig);
+      //retCode = emEVSE->receiveResponse(resGetConfig);
+      retCode = COMM_SUCCESS;
       if (retCode != COMM_SUCCESS)
       {
-        ESP_LOGE(TAG_EMSECC, "Send Request_getConfig error:%d(%s) while seccLinkEvse\r\n", retCode, ifCommErrorDesc[retCode].c_str());
+        ESP_LOGE(TAG_EMSECC, "Receive Request_getConfig error:%d(%s) while seccLinkEvse\r\n", retCode, ifCommErrorDesc[retCode].c_str());
         setFsmState(SECC_State_SuspendedEVSE, NULL);
         return;
       };
@@ -296,7 +311,11 @@ void EMSECC::seccInitialize(void *param)
       String csUrl =  String(OCPP_URL)+cpVendor+'_'+cpModel+'_'+cpSerialNum ;
       String fwVersion = String(FWVersion);
       String cbSerialNum = String(CBSerialNum);
-      bootNotification(cpModel.c_str() , cpVendor.c_str() , cpSerialNum.c_str(), fwVersion.c_str(),cbSerialNum.c_str(),
+      String iccid = String(ICCID);
+      String imsi = String(IMSI);
+      String meterSerialNumber = String(MSerialNumber);
+      String meterType = String(MType);
+      bootNotification(cpModel.c_str() , cpVendor.c_str() , cpSerialNum.c_str(), fwVersion.c_str(),cbSerialNum.c_str(),iccid.c_str(), imsi.c_str(), meterSerialNumber.c_str(),meterType.c_str(),
                         [this](JsonObject confMsg)
                        {
                          //This callback is executed when the .conf() response from the central system arrives
@@ -328,7 +347,7 @@ void EMSECC::seccInitialize(void *param)
 
       ResponsePayloadEVSE_setTime resSettime;
       retCode = emEVSE->receiveResponse(resSettime);
-      //retCode = COMM_SUCCESS;
+      //retCode = receiveRSettime(resSettime);
       if (retCode != COMM_SUCCESS)
       {
         ESP_LOGE(TAG_EMSECC, "Receive Response_setTime error:%d(%s) while seccLinkEvse\r\n", retCode, ifCommErrorDesc[retCode].c_str());
@@ -359,7 +378,8 @@ void EMSECC::seccInitialize(void *param)
     };
 
     ResponsePayloadEVSE_getEVSEState resGetEvseState;
-    retCode = emEVSE->receiveResponse(resGetEvseState);
+    //retCode = emEVSE->receiveResponse(resGetEvseState);
+    retCode = receiveRgetEVSEState(resGetEvseState);
     if (retCode != COMM_SUCCESS)
     {
       ESP_LOGE(TAG_EMSECC, "Receive Response_getEVSEState error:%d while seccWaiting\r\n", retCode);
@@ -411,7 +431,8 @@ void EMSECC::seccInitialize(void *param)
       };
 
       ResponsePayloadEVSE_getRFIDState resGetRfidState;
-      retCode = emEVSE->receiveResponse(resGetRfidState);
+      //retCode = emEVSE->receiveResponse(resGetRfidState);
+      retCode = receiveRresGetRfidState(resGetRfidState);
       if (retCode != COMM_SUCCESS)
       {
         ESP_LOGE(TAG_EMSECC, "Receive Response_getRFIDState error:%d while seccWaiting\r\n", retCode);
@@ -538,7 +559,8 @@ void EMSECC::seccInitialize(void *param)
     };
 
     ResponsePayloadEVSE_getEVSEState resGetEvseState;
-    retCode = emEVSE->receiveResponse(resGetEvseState);
+    //retCode = emEVSE->receiveResponse(resGetEvseState);
+    retCode = receiveRgetEVSEState1(resGetEvseState);
     if (retCode != COMM_SUCCESS)
     {
       ESP_LOGE(TAG_EMSECC, "Receive Response_getEVSEState error:%d while seccPreCharge\r\n", retCode);
@@ -655,7 +677,8 @@ void EMSECC::seccInitialize(void *param)
     };
 
     ResponsePayloadEVSE_getEVSEState resGetEvseState;
-    retCode = emEVSE->receiveResponse(resGetEvseState);
+    //retCode = emEVSE->receiveResponse(resGetEvseState);
+    retCode = receiveRgetEVSEState2(resGetEvseState);
     if (retCode != COMM_SUCCESS)
     {
       ESP_LOGE(TAG_EMSECC, "Receive Response_getEVSEState error:%d while seccPreCharge\r\n", retCode);
