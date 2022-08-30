@@ -30,9 +30,6 @@ using ArduinoOcpp::Ocpp16::GetConfiguration;
 #include "ArduinoOcpp/Core/OcppModel.h"
 #include "ArduinoOcpp/Tasks/ChargePointStatus/ChargePointStatusService.h"
 
-
-//OcppModel *OCPPM = new OcppModel(ArduinoOcpp::Clocks::DEFAULT_CLOCK);
-
 EMSECC::EMSECC(SECC_SPIClass *pCommIF)
 {
   this->evIsLock = false;
@@ -297,8 +294,8 @@ void EMSECC::seccInitialize(void *param)
       String cpModel = String(CP_Model);
       String cpVendor = String(CP_Vendor);    
       String csUrl =  String(OCPP_URL)+cpVendor+'_'+cpModel+'_'+cpSerialNum ;
-      String fwVersion = String("v0.0.1");
-      String cbSerialNum = String("1276gjadg");
+      String fwVersion = String(FWVersion);
+      String cbSerialNum = String(CBSerialNum);
       bootNotification(cpModel.c_str() , cpVendor.c_str() , cpSerialNum.c_str(), fwVersion.c_str(),cbSerialNum.c_str(),
                         [this](JsonObject confMsg)
                        {

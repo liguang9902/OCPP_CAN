@@ -188,8 +188,8 @@ static void esp_initialize_sntp(void)
 {
     ESP_LOGI(TAG, "Initializing SNTP");
     // set timezone to China Standard Time
-    //setenv("TZ", "CST-8", 1);
-    //tzset();
+    setenv("TZ", "CST-8", 1);
+    tzset();
     
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
     sntp_setservername(0, "pool.ntp.org");

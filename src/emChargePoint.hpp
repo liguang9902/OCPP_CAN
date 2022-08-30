@@ -50,7 +50,7 @@
 
 #define CP_Model        "EU-DC-em22-evse"
 #define CP_Vendor       "enrgmax"
-
-   
+#define FWVersion       "v0.0.2"
+#define CBSerialNum     "1276gjadg"
 
 #endif
