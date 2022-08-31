@@ -177,12 +177,12 @@ ArduinoOcpp::ChargePointStatusService *getChargePointStatusService();
 
 
 
-#if defined(AO_CUSTOM_DIAGNOSTICS) || defined(AO_CUSTOM_WS)
+//#if defined(AO_CUSTOM_DIAGNOSTICS) || defined(AO_CUSTOM_WS)
 #include <ArduinoOcpp/Tasks/Diagnostics/DiagnosticsService.h>
 // This library implements the OCPP messaging side of Diagnostics, but no logging or the
 // log upload to your backend.
 // To integrate Diagnostics, see ArduinoOcpp/Tasks/Diagnostics/DiagnosticsService.h
 ArduinoOcpp::DiagnosticsService *getDiagnosticsService();
-#endif
+//#endif
 
 #endif

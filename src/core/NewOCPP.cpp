@@ -550,9 +550,9 @@ ArduinoOcpp::ChargePointStatusService *getChargePointStatusService(){
 }
 
 
-#if defined(AO_CUSTOM_DIAGNOSTICS) || defined(AO_CUSTOM_WS)
+//#if defined(AO_CUSTOM_DIAGNOSTICS) || defined(AO_CUSTOM_WS)
 ArduinoOcpp::DiagnosticsService *getDiagnosticsService() {
     auto& model = ocppEngine->getOcppModel();
     return model.getDiagnosticsService();
 }
-#endif
+//#endif

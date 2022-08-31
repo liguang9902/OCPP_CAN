@@ -346,8 +346,8 @@ void EMSECC::seccInitialize(void *param)
       sleep(5);
 
       ResponsePayloadEVSE_setTime resSettime;
-      retCode = emEVSE->receiveResponse(resSettime);
-      //retCode = receiveRSettime(resSettime);
+      //retCode = emEVSE->receiveResponse(resSettime);
+      retCode = receiveRSettime(resSettime);
       if (retCode != COMM_SUCCESS)
       {
         ESP_LOGE(TAG_EMSECC, "Receive Response_setTime error:%d(%s) while seccLinkEvse\r\n", retCode, ifCommErrorDesc[retCode].c_str());
