@@ -43,9 +43,10 @@
     public:
         OcppTask();
         ~OcppTask();
-        void begin(EVSEModel &evse);
+        void begin(EVSEModel *evse);
 
-        void loop();
+        void setup();
+        unsigned long loop(MicroTasks::WakeReason reason);
     };
     
     

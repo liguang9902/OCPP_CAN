@@ -27,7 +27,7 @@ private:
                 return 0;
             }
             int count;
-            int res = lwip_ioctl(_fd, FIONREAD, &count);
+            int res = lwip_ioctl_r(_fd, FIONREAD, &count);
             if(res < 0) {
                 _failed = true;
                 return 0;
@@ -224,7 +224,7 @@ int CellClient::connect(IPAddress ip, uint16_t port, int32_t timeout)
     tv.tv_sec = 0;
     tv.tv_usec = timeout * 1000;
 
-    int res = lwip_connect(sockfd, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
+    int res = lwip_connect_r(sockfd, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
     if (res < 0 && errno != EINPROGRESS) {
         log_e("connect on fd %d, errno: %d, \"%s\"", sockfd, errno, strerror(errno));
         close(sockfd);

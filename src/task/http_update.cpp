@@ -56,6 +56,7 @@ bool http_update_from_url(String url,
       if(http_update_end())
       {
         success(HTTP_UPDATE_OK);
+        sleep(5);
         ESP.restart();
       } else {
         error(HTTP_UPDATE_ERROR_FAILED_TO_END_UPDATE);

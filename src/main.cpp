@@ -44,6 +44,10 @@ bool networkReady =  false;
 #include "driver/spi_master.h"
 //HardwareSerial ESP_Uart1(1);
 
+#include "task/ocpp.h"
+#include "task/EVSEModel.h"
+#include "MongooseCore.h"
+
 #define TAG  "TAG:"
 #define SPI_SCK 14
 #define SPI_MISO 12
@@ -51,8 +55,6 @@ bool networkReady =  false;
 #define SPI_CS 15
 //static const int spiClk = 20000000;
 SECC_SPIClass * hspi = new SECC_SPIClass(HSPI);
-
-
 
 static void hw_init()
 {
@@ -201,8 +203,8 @@ static void esp_initialize_sntp(void)
 
 }
 
-
-
+OcppTask ocppMD = OcppTask();
+EVSEModel *evse;
 EMSECC *emSecc ;
 void setup() {
     pinMode(SPI_CS,OUTPUT);
@@ -231,6 +233,8 @@ void setup() {
     cellular_attach();
 #endif
 
+    evse = new EVSEModel(hspi);
+    ocppMD.begin(evse);
     emSecc = new EMSECC(hspi);
     uint64_t mac = ESP.getEfuseMac();
     String cpSerialNum = String((unsigned long)mac , 16);
@@ -265,6 +269,8 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   
-  emSecc->secc_loop();
-  OCPP_loop(); 
+  //emSecc->secc_loop();
+  //OCPP_loop(); 
+  Mongoose.poll(0);
+  MicroTask.update();
 }

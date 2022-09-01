@@ -16,16 +16,20 @@ using namespace ArduinoOcpp;
 OcppTask *OcppTask::instance = NULL;
 
 OcppTask::OcppTask() : MicroTasks::Task() {
-
+    DBUGLN("create a model success");
 }
 
 OcppTask::~OcppTask() {
+    instance = NULL;
+}
+
+void OcppTask::setup(){
 
 }
 
-void OcppTask::begin(EVSEModel &evse)
+void OcppTask::begin(EVSEModel *evse)
 {
-    this->evse = &evse;
+    this->evse = evse;
     
     initializeArduinoOcpp();
 
@@ -441,7 +445,7 @@ bool OcppTask::idTagIsAccepted(JsonObject payload) {
     return !strcmp(status, "Accepted");
 }
 
-void OcppTask::loop(){
+unsigned long OcppTask::loop(MicroTasks::WakeReason reason){
     if (OcppInitialized) {
         OCPP_loop();
     }
@@ -524,5 +528,5 @@ void OcppTask::loop(){
         updateEvseClaimLast = millis();
         updateEvseClaim();
     }*/
-   
+   return OcppInitialized ? 0 : 1000;
 }
