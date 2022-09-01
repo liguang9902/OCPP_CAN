@@ -41,7 +41,14 @@
         "streambuf": "cpp",
         "cinttypes": "cpp",
         "utility": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "atomic": "cpp",
+        "iterator": "cpp",
+        "map": "cpp",
+        "memory_resource": "cpp",
+        "optional": "cpp",
+        "random": "cpp",
+        "string": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

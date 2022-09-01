@@ -44,6 +44,7 @@ bool networkReady =  false;
 #include "driver/spi_master.h"
 //HardwareSerial ESP_Uart1(1);
 
+#define TAG  "TAG:"
 #define SPI_SCK 14
 #define SPI_MISO 12
 #define SPI_MOSI 13

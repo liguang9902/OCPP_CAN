@@ -58,6 +58,11 @@ EMSECC::EMSECC(SECC_SPIClass *pCommIF)
   setFsmState(SECC_State_Unknown, NULL);
 }
 
+EMSECC::EMSECC()
+{
+
+}
+
 EMSECC::~EMSECC()
 {
   //free(this->pRxBuffer);

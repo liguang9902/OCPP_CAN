@@ -73,6 +73,7 @@ private:
     void    getOcppConfiguration();
 public:
     EMSECC(SECC_SPIClass *pCommIF);
+    EMSECC();
     ~EMSECC();
 
     std::map<SECC_State , PTR_SECC_Action> seccFSM ; 
