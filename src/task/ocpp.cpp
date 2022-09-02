@@ -8,7 +8,8 @@
 #include "emChargePoint.hpp"
 #include "MicroTasks.h"
 #include "MicroDebug.h"
-#include "http_update.h"
+//#include "http_update.h"
+#include "HTTPUpdate.h"
 
 using namespace MicroTasks;
 using namespace ArduinoOcpp;
@@ -16,7 +17,7 @@ using namespace ArduinoOcpp;
 OcppTask *OcppTask::instance = NULL;
 
 OcppTask::OcppTask() : MicroTasks::Task() {
-    DBUGLN("create a model success");
+    ESP_LOGI(TAG_EMSECC,"create a model success");
 }
 
 OcppTask::~OcppTask() {
@@ -27,10 +28,10 @@ void OcppTask::setup(){
 
 }
 
-void OcppTask::begin(EVSEModel *evse)
+void OcppTask::begin(EVSEModel *evse,EventLog &eventLog)
 {
     this->evse = evse;
-    
+    this->eventLog = &eventLog;
     initializeArduinoOcpp();
 
     instance = this; 
@@ -38,13 +39,33 @@ void OcppTask::begin(EVSEModel *evse)
 }
 
 void OcppTask::initializeArduinoOcpp() {
+    uint64_t mac = ESP.getEfuseMac();
+    String cpSerialNum = String((unsigned long)mac , 16);
+    String cpModel = String(CP_Model);
+    String cpVendor = String(CP_Vendor);    
+    String csUrl =  String(OCPP_URL)+cpVendor+'_'+cpModel+'_'+cpSerialNum ;
 
+    String ocppHost = OCPP_HOST;
+    const char *ocpphost = ocppHost.c_str();
+    OCPP_initialize(ocpphost, OCPP_PORT, csUrl.c_str());
+
+    
+        //endSession();
+    
+    ArduinoOcpp::ChargePointStatusService *CPSS = getChargePointStatusService();
+    if (CPSS &&  CPSS->getConnector(0)) {
+        CPSS->getConnector(0)->setAvailability(true);
+        CPSS->getConnector(1)->endSession();
+    Serial.println(F(" Set Connector Availability."));
+             }
+    
+    
     loadEvseBehavior();
     initializeDiagnosticsService();
     initializeFwService();
     
-    uint64_t mac = ESP.getEfuseMac();
-    String cpSerialNum = String((unsigned long)mac , 16);
+    //uint64_t mac = ESP.getEfuseMac();
+    //String cpSerialNum = String((unsigned long)mac , 16);
 
     DynamicJsonDocument *evseDetailsDoc = new DynamicJsonDocument((JSON_OBJECT_SIZE(9)
         + strlen(CP_Model) + 1
@@ -59,7 +80,7 @@ void OcppTask::initializeArduinoOcpp() {
     JsonObject payload = evseDetailsDoc->to<JsonObject>();
     payload["chargePointModel"] = CP_Model;
     if (cpSerialNum[0]) {
-        payload["chargePointSerialNumber"] = cpSerialNum.c_str();
+        payload["chargePointSerialNumber"] = cpSerialNum;
     }
     payload["chargePointVendor"] = CP_Vendor;
     if (FWVersion[0]) {
@@ -160,16 +181,16 @@ void OcppTask::loadEvseBehavior(){
         }
         return (const char *) nullptr;
     });
-    */
+    
 
    onIdTagInput = [this] (const String& idInput) {
         if (idInput.isEmpty()) {
-            DBUGLN("[ocpp] empty idTag");
+            ESP_LOGD(TAG_EMSECC,"[ocpp] empty idTag");
             return true;
         }
         if (!isAvailable() || !OcppInitialized) {
             
-            DBUGLN(F("[ocpp] present card but inoperative"));
+            ESP_LOGD(TAG_EMSECC,"[ocpp] present card but inoperative");
             return true;
         }
         const char *sessionIdTag = getSessionIdTag();
@@ -178,30 +199,37 @@ void OcppTask::loadEvseBehavior(){
             if (idInput.equals(sessionIdTag)) {
                 //NFC card matches
                 endSession();
-                DBUGLN("Card accepted");
+                ESP_LOGI(TAG_EMSECC,"Card accepted");
             } else {
-                DBUGLN("Card not recognized");
+                ESP_LOGW(TAG_EMSECC,"Card not recognized");
             }
         } else {
             //idle mode
-            DBUGLN("Card read");
+            ESP_LOGI(TAG_EMSECC,"Card read");
             String idInputCapture = idInput;
             authorize(idInput.c_str(), [this, idInputCapture] (JsonObject payload) {
                 if (idTagIsAccepted(payload)) {
                     beginSession(idInputCapture.c_str());
-                    DBUGLN("Card accepted");
+                    ESP_LOGI(TAG_EMSECC,"Card accepted");
                 } else {
-                    DBUGLN("Card not recognized");
+                    ESP_LOGW(TAG_EMSECC,"Card not recognized");
                 }
             }, [this] () {
-                DBUGLN("OCPP timeout");
+                ESP_LOGD(TAG_EMSECC,"OCPP timeout");
             });
         }
 
         return true;
-    };
+    };*/
 
     //rfid->setOnCardScanned(&onIdTagInput);
+
+
+    setOnRemoteStartTransactionSendConf([this](JsonObject payload){
+        const char *type = payload["type"];
+
+
+    });
 
     setOnResetReceiveReq([this] (JsonObject payload) {
         const char *type = payload["type"] | "Soft";
@@ -212,7 +240,7 @@ void OcppTask::loadEvseBehavior(){
         resetTime = millis();
         resetTriggered = true;
 
-        DBUGLN("Reboot EVSE");
+        ESP_LOGI(TAG_EMSECC,"Reboot EVSE");
     });
 
     setOnUnlockConnector([] () {
@@ -245,16 +273,16 @@ ArduinoOcpp::DiagnosticsService *diagService = getDiagnosticsService();
             unsigned int port_i = 0;
             struct mg_str scheme, query, fragment;
             if (mg_parse_uri(mg_mk_str(location.c_str()), &scheme, NULL, NULL, &port_i, NULL, &query, &fragment)) {
-                DBUG(F("[ocpp] Diagnostics upload, invalid URL: "));
-                DBUGLN(location.c_str());
+                
+                ESP_LOGI(TAG_EMSECC,"[ocpp] Diagnostics upload, invalid URL: %s",location.c_str());
                 diagFailure = true;
                 return false;
             }
 
-            if (eventLog == NULL) {
+            /*if (eventLog == NULL) {
                 diagFailure = true;
                 return false;
-            }
+            }*/
 
             //create file to upload
             #define BOUNDARY_STRING "-----------------------------WebKitFormBoundary7MA4YWxkTrZu0gW025636501"
@@ -280,8 +308,8 @@ ArduinoOcpp::DiagnosticsService *diagService = getDiagnosticsService();
                     if (overflow) return;
                     ArduinoOcpp::OcppTimestamp timestamp = ArduinoOcpp::OcppTimestamp();
                     if (!timestamp.setTime(time.c_str())) {
-                        DBUG(F("[ocpp] Diagnostics upload, cannot parse timestamp format: "));
-                        DBUGLN(time);
+                        
+                        ESP_LOGD(TAG_EMSECC,"[ocpp] Diagnostics upload, cannot parse timestamp format:%s ",time);
                         return;
                     }
 
@@ -314,8 +342,8 @@ ArduinoOcpp::DiagnosticsService *diagService = getDiagnosticsService();
 
             body += bodySuffix;
 
-            DBUG(F("[ocpp] POST diagnostics file to "));
-            DBUGLN(location.c_str());
+            
+            ESP_LOGI(TAG_EMSECC,"[ocpp] POST diagnostics file to %s",location.c_str());
 
             MongooseHttpClientRequest *request =
                     diagClient.beginRequest(location.c_str());
@@ -357,26 +385,52 @@ ArduinoOcpp::FirmwareService *fwService = getFirmwareService();
             }
         });
 
-        fwService->setOnInstall([this](const std::string &location) {
+        fwService->setOnInstall([this ,fwService](const std::string &location) {
+                String location1 = location.c_str();
+                ESP_LOGD(TAG_PROXY, "UpgradeProxy Start Install firmware , URL:[%s]" , location.c_str());
+                String fileName = location1.substring(location1.lastIndexOf('/')+1);
+                if(fileName.startsWith("LPC")){
+                 ESP_LOGD(TAG_PROXY, "Notify URL is  a firmware for LPC ,filename=%s  ,pass...(Exist?=%s) " , fileName.c_str() , USE_FS.exists('/'+fileName.c_str())?"True":"False");
+                 //proxyInstallationStatus = InstallationStatus::Installed;
+                    return true;
+                }
 
-            DBUGLN(F("[ocpp] Starting installation routine"));
-            
-            //reset reported state
-            updateFailure = false;
-            updateSuccess = false;
+                WiFiClient client;
+                //WiFiClientSecure client;
+                //client.setCACert(rootCACertificate);
+                client.setTimeout(60); //in seconds
+    
+                // httpUpdate.setLedPin(LED_BUILTIN, HIGH);
+                t_httpUpdate_return ret = httpUpdate.update(client, location.c_str());
 
-            return http_update_from_url(String(location.c_str()), [] (size_t complete, size_t total) { },
-                [this] (int status_code) {
-                    //onSuccess
-                    updateSuccess = true;
+                switch (ret) {
+                case HTTP_UPDATE_FAILED:
+                fwService->setInstallationStatusSampler([](){return InstallationStatus::InstallationFailed;});
+                //proxyInstallationStatus = InstallationStatus::InstallationFailed;
+                 Serial.printf("[main] HTTP_UPDATE_FAILED Error (%d): %s\n", httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
+                    break;
+                case HTTP_UPDATE_NO_UPDATES:
+                    fwService->setInstallationStatusSampler([](){return InstallationStatus::InstallationFailed;});
+                    //proxyInstallationStatus = InstallationStatus::InstallationFailed;
+                 Serial.println(F("[main] HTTP_UPDATE_NO_UPDATES"));
+                    break;
+                case HTTP_UPDATE_OK:
+                    fwService->setInstallationStatusSampler([](){return InstallationStatus::Installed;});
+                    //proxyInstallationStatus = InstallationStatus::Installed;
+                    //installedFirmwareName = fileName;
+                    Serial.println(F("[main] HTTP_UPDATE_OK"));
 
-                    resetTime = millis();
-                    resetTriggered = true;
-                }, [this] (int error_code) {
-                    //onFailure
-                    updateFailure = true;
-                });
+                ArduinoOcpp::ChargePointStatusService *CPSS = getChargePointStatusService();
+                    if (CPSS &&  CPSS->getConnector(0)) {
+                CPSS->getConnector(0)->setAvailability(true);
+                    Serial.println(F("[FirmwareProxy] Set Connector Availability."));
+                 }
+                 sleep(2);
+                 ESP.restart();
+                    break;
+                }   
         });
+
     }
 }
 
@@ -452,60 +506,124 @@ unsigned long OcppTask::loop(MicroTasks::WakeReason reason){
 
     if (OcppInitialized) {
         
-        if (evse->isVehicleConnected() && !vehicleConnected) {
+        if (evse->isVehicleConnected()) {
             //vehicle plugged
+            
             if (!getSessionIdTag()) {
                 //vehicle plugged before authorization
-                String ocpp_idTag = "NTR";//由lpc传输获得 
+               
+                  this->ocpp_idTag = "NTR";//由lpc传输获得 
                     //no RFID reader --> Auto-Authorize or RemoteStartTransaction
                     if (!ocpp_idTag.isEmpty() /*&& strcmp(tx_start_point.c_str(), "tx_only_remote")*/) {
                         //ID tag given in OpenEVSE dashboard & Auto-Authorize not disabled
                         String idTagCapture = ocpp_idTag;
                         authorize(idTagCapture.c_str(), [this, idTagCapture] (JsonObject payload) {
                             if (idTagIsAccepted(payload)) {
+                                ESP_LOGI(TAG_EMSECC,"Session begin! idTag:%s \r\n",idTagCapture.c_str());
                                 beginSession(idTagCapture.c_str());
+                                transactionInitialized = true;
                             } else {
-                                DBUGLN("ID tag not recognized");
+                                ESP_LOGD(TAG_EMSECC,"ID tag not recognized");
                             }
                         }, [this] () {
-                            DBUGLN("OCPP timeout");
+                            ESP_LOGD(TAG_EMSECC,"OCPP timeout");
                         });
+                         //sleep(5);
                     } else {
                         //OpenEVSE cannot authorize this session -> wait for RemoteStartTransaction
-                        DBUGLN("Please authorize session");
+                        ESP_LOGI(TAG_EMSECC,"Please authorize session");
                     }
                 
             }
         }
+
+        if (transactionInitialized && getTransactionId()<0)
+        {
+            ESP_LOGW(TAG_EMSECC, "Start new Transaction");
+            startTransaction(this->ocpp_idTag.c_str(),
+            [this](JsonObject conf)
+            {
+              string authConfirm;
+              if (serializeJson(conf, authConfirm))
+              {
+                ESP_LOGD(TAG_EMSECC, "Start new Transaction confirm: %s \r\n", authConfirm.c_str());
+              };
+              if (conf.containsKey("idTagInfo"))
+              {
+                if (conf["idTagInfo"].containsKey("status"))
+                {
+                  //if( memcmp(conf["idTagInfo"] , "Accepted" ,8)==0 )
+                  if (strcmp(conf["idTagInfo"]["status"], "Accepted") == 0)
+                  {
+                    this->transactionRunning = true;
+
+                    sleep(5);// for test
+                  }
+                  else
+                  {
+                    //String retState ;
+
+                    ESP_LOGW(TAG_EMSECC, "Transaction didn't accepted by CS: [?]"); // .as<const char *>()
+                  }
+                }
+                else
+                {
+                  ESP_LOGW(TAG_EMSECC, "Transaction confirm missed key \"idTagInfo-status\"");
+                }
+              }
+              else
+              {
+                ESP_LOGW(TAG_EMSECC, "Transaction confirm missed key \"idTagInfo\"");
+              }
+              
+            });
+            sleep(10);
+        }
+        
+        if (this->transactionRunning)
+        {
+            ESP_LOGE(TAG_EMSECC, "Stop Transaction\n");
+            stopTransaction(
+            [](JsonObject confirm)
+            {
+            String confirmMessage;
+            serializeJson(confirm, confirmMessage);
+            ESP_LOGD(TAG_EMSECC, "Stop Transaction confirm:[%s]\r\n", confirmMessage.c_str());
+            });
+            this->transactionRunning = false;
+            
+        }
+        
+
         vehicleConnected = evse->isVehicleConnected();
 
         if (ocppSessionDisplay && !getSessionIdTag()) {
             //Session unauthorized. Show if StartTransaction didn't succeed
             if (ocppTxIdDisplay < 0) {
 
-                    DBUGLN("Present card again");
+                    ESP_LOGI(TAG_EMSECC,"Present card again");
                
                 }
             }
             else if (!ocppSessionDisplay && getSessionIdTag()) {
             //Session recently authorized
             if (!evse->isVehicleConnected()) {
-                DBUGLN("Plug in cable");
+                ESP_LOGI(TAG_EMSECC,"Plug in cable");
             }
         }
         ocppSessionDisplay = getSessionIdTag();
 
         if (ocppTxIdDisplay <= 0 && getTransactionId() > 0) {
-            DBUGLN("OCPP start tx");
+            ESP_LOGI(TAG_EMSECC,"OCPP start tx");
             String txIdMsg = "TxID ";
             txIdMsg += String(getTransactionId());
-            DBUGLN(txIdMsg);
+            ESP_LOGI(TAG_EMSECC,"%s",txIdMsg);
         } else if (ocppTxIdDisplay > 0 && getTransactionId() < 0) {
-            DBUGLN("OCPP Good bye!");
+            ESP_LOGI(TAG_EMSECC,"OCPP Good bye!");
             String txIdMsg = "TxID ";
             txIdMsg += String(ocppTxIdDisplay);
             txIdMsg += " finished";
-            DBUGLN(txIdMsg);
+            ESP_LOGI(TAG_EMSECC,"%s",txIdMsg);
         }
         ocppTxIdDisplay = getTransactionId();
     }

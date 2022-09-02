@@ -47,6 +47,7 @@ bool networkReady =  false;
 #include "task/ocpp.h"
 #include "task/EVSEModel.h"
 #include "MongooseCore.h"
+#include "task/event_log.h"
 
 #define TAG  "TAG:"
 #define SPI_SCK 14
@@ -203,6 +204,7 @@ static void esp_initialize_sntp(void)
 
 }
 
+EventLog eventLog;
 OcppTask ocppMD = OcppTask();
 EVSEModel *evse;
 EMSECC *emSecc ;
@@ -233,9 +235,11 @@ void setup() {
     cellular_attach();
 #endif
 
+    eventLog.begin();
     evse = new EVSEModel(hspi);
-    ocppMD.begin(evse);
+    ocppMD.begin(evse,eventLog);
     emSecc = new EMSECC(hspi);
+    /*
     uint64_t mac = ESP.getEfuseMac();
     String cpSerialNum = String((unsigned long)mac , 16);
     String cpModel = String(CP_Model);
@@ -245,7 +249,7 @@ void setup() {
     String ocppHost = OCPP_HOST;
     const char *ocpphost = ocppHost.c_str();
     OCPP_initialize(ocpphost, OCPP_PORT, csUrl.c_str());
-
+    */
 
 
     

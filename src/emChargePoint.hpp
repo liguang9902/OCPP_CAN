@@ -48,7 +48,7 @@
 #define OCPP_URL INTERNET_OCPP_URL
 #endif
 
-#define CP_Model        "EU-DC-em22-evse"
+#define CP_Model        "EU-DC-em12-evse"
 #define CP_Vendor       "enrgmax"
 #define FWVersion       "v0.0.2"
 #define CBSerialNum     "1276gjadg"

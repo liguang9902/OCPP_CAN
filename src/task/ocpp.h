@@ -10,6 +10,10 @@
         EVSEModel *evse;
         EventLog *eventLog;
 
+
+        String ocpp_idTag ;
+        bool transactionInitialized = false; 
+        bool transactionRunning = false;
         float charging_limit = -1.f; //in Watts. chargingLimit < 0 means that there is no Smart Charging (and no restrictions )
         int ocppTxIdDisplay {-1};
         bool ocppSessionDisplay {false};
@@ -43,7 +47,7 @@
     public:
         OcppTask();
         ~OcppTask();
-        void begin(EVSEModel *evse);
+        void begin(EVSEModel *evse,EventLog &eventLog);
 
         void setup();
         unsigned long loop(MicroTasks::WakeReason reason);

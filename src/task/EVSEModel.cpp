@@ -58,7 +58,7 @@ double EVSEModel::getSessionEnergy(){
 }
 
 bool EVSEModel::isVehicleConnected(){
-    bool _isVehicleConnected = false;
+    bool _isVehicleConnected = true;
     return _isVehicleConnected;
 }
 
