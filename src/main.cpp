@@ -273,8 +273,8 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   
-  //emSecc->secc_loop();
-  //OCPP_loop(); 
-  Mongoose.poll(0);
-  MicroTask.update();
+  emSecc->secc_loop();
+  OCPP_loop(); 
+  //Mongoose.poll(0);
+  //MicroTask.update();
 }

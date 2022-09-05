@@ -71,6 +71,7 @@ private:
     void    seccMaintaince(void *param);
 //=Test function
     void    getOcppConfiguration();
+    void    loadEvseBehavior();
 public:
     EMSECC(SECC_SPIClass *pCommIF);
     EMSECC();

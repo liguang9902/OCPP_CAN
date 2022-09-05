@@ -146,49 +146,7 @@ void EMSECC::seccInitialize(void *param)
   if (!loopCount)
   {
     ESP_LOGD(TAG_EMSECC, "seccInitialize %f", Tfun(paraA));
-    setEnergyActiveImportSampler([]()
-                                 {
-                                   //Replace with real reading ,read the energy input register of the EVSE here and return the value in Wh
-                                   static ulong lastSampled = millis();
-                                   static float energyMeter = 0.f;
-                                   if (getTransactionId() > 0 && 1)                           // digitalRead(EV_CHARGE_PIN) == EV_CHARGING
-                                     energyMeter += ((float)millis() - lastSampled) * 0.003f; //increase by 0.003Wh per ms (~ 10.8kWh per h)
-                                   lastSampled = millis();
-                                   return energyMeter;
-                                 });
-    setOnChargingRateLimitChange([this](float limit)
-                                 {
-                                   this->secc_setEVSE_PowerLimit(limit);
-                                   //TO-DO For enmax , Notify to EVSE , implement in above function
-                                   //set the SAE J1772 Control Pilot value here
-
-                                   float amps = limit / 230.f;
-                                   if (amps > 51.f)
-                                     amps = 51.f;
-
-                                   int pwmVal;
-                                   if (amps < 6.f)
-                                   {
-                                     pwmVal = 256; // = constant +3.3V DC
-                                   }
-                                   else
-                                   {
-                                     pwmVal = (int)(4.26667f * amps);
-                                   }
-                                   //ledcWrite(AMPERAGE_PIN, pwmVal);    //PWM Output?
-                                 });
-    setOnResetSendConf([] (JsonObject payload) 
-                                  {
-                                    if (getTransactionId() >= 0)
-                                    stopTransaction();
-                                  
-                                  //ulong reboot_timestamp = millis();
-                                  //ulong scheduleReboot = 5000;
-                                  if (1) {
-                                    sleep(5);
-                                    ESP.restart();
-                                  }
-                                  });
+    loadEvseBehavior();
     FirmwareService *firmwareService = getFirmwareService();
     firmwareService->setDownloadStatusSampler(this->proxyDownloadStatusSampler);
     //firmwareService->setOnDownload( this->proxyDownload );
@@ -880,4 +838,90 @@ void EMSECC::seccInitialize(void *param)
     ESP_LOGE(TAG_EMSECC, "SECC Malfunction , reboot 10s after ...\r\n");
     sleep(10);
     esp_restart();
+  }
+
+  void EMSECC::loadEvseBehavior(){
+
+
+  
+
+     setPowerActiveImportSampler([this]() {
+        //return (float) (emEVSE->getAmps() * emEVSE->getVoltage());
+        return 5000;
+    });
+
+    setEnergyActiveImportSampler([this] () {
+        /*float activeImport = 0.f;
+        activeImport += (float) emEVSE->getTotalEnergy();
+        activeImport += (float) emEVSE->getSessionEnergy();
+        return activeImport;*/
+
+        static ulong lastSampled = millis();
+                                   static float energyMeter = 0.f;
+                                   if (getTransactionId() > 0 && 1)                           // digitalRead(EV_CHARGE_PIN) == EV_CHARGING
+                                     energyMeter += ((float)millis() - lastSampled) * 0.003f; //increase by 0.003Wh per ms (~ 10.8kWh per h)
+                                   lastSampled = millis();
+                                   return energyMeter;
+    });
+
+    setOnChargingRateLimitChange([this] (float limit) { //limit = maximum charge rate in Watts
+      this->secc_setEVSE_PowerLimit(limit);
+      //TO-DO For enmax , Notify to EVSE , implement in above function
+      //set the SAE J1772 Control Pilot value here
+
+      float amps = limit / 230.f;
+      if (amps > 51.f)
+      amps = 51.f;
+
+      int pwmVal;
+      if (amps < 6.f)
+      {
+        pwmVal = 256; // = constant +3.3V DC
+      }
+      else
+      {
+        pwmVal = (int)(4.26667f * amps);
+      }
+      //ledcWrite(AMPERAGE_PIN, pwmVal);    //PWM Output?
+    });
+/*
+    setConnectorPluggedSampler([this] () {
+        //return (bool) emEVSE->isVehicleConnected();
+        return true;
+    });
+
+    setEvRequestsEnergySampler([this] () {
+        //return (bool) emEVSE->isCharging();
+        return true;
+    });
+
+    setConnectorEnergizedSampler([this] () {
+        //return emEVSE->isActive();
+        return true;
+    });
+*/
+ 
+    setOnResetSendConf([] (JsonObject payload) 
+    {   
+        const char *type = payload["type"] | "Soft";
+        if (getTransactionId() >= 0)
+        {
+          stopTransaction();
+          }
+                                  
+        //ulong reboot_timestamp = millis();
+        //ulong scheduleReboot = 5000;
+        
+          sleep(5);
+          ESP.restart();
+
+      });
+
+    //远程开启交易的反馈
+     setOnRemoteStartTransactionSendConf([this](JsonObject payload){
+        const char *
+        const char *idtag = payload["idtag"] ;
+      
+
+    });
   }

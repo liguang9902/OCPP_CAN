@@ -34,6 +34,7 @@ void OcppTask::begin(EVSEModel *evse,EventLog &eventLog)
     this->eventLog = &eventLog;
     initializeArduinoOcpp();
 
+
     instance = this; 
     MicroTask.startTask(this);
 }
@@ -56,6 +57,7 @@ void OcppTask::initializeArduinoOcpp() {
     if (CPSS &&  CPSS->getConnector(0)) {
         CPSS->getConnector(0)->setAvailability(true);
         CPSS->getConnector(1)->endSession();
+        CPSS->getConnector(1)->setAvailability(true);
     Serial.println(F(" Set Connector Availability."));
              }
     
@@ -127,7 +129,7 @@ void OcppTask::loadEvseBehavior(){
     setOnChargingRateLimitChange([this] (float limit) { //limit = maximum charge rate in Watts
         charging_limit = limit;
     });
-
+/*
     setConnectorPluggedSampler([this] () {
         return (bool) evse->isVehicleConnected();
     });
@@ -140,7 +142,7 @@ void OcppTask::loadEvseBehavior(){
         return evse->isActive();
     });
 
-    /*
+    
      * Report failures to central system. Note that the error codes are standardized in OCPP
      
 
@@ -509,26 +511,27 @@ unsigned long OcppTask::loop(MicroTasks::WakeReason reason){
         if (evse->isVehicleConnected()) {
             //vehicle plugged
             
-            if (!getSessionIdTag()) {
+            if (!getSessionIdTag() && getTransactionId()<=0) {
                 //vehicle plugged before authorization
                
-                  this->ocpp_idTag = "NTR";//由lpc传输获得 
+                  ocpp_idTag = "NTR";//由lpc传输获得 
                     //no RFID reader --> Auto-Authorize or RemoteStartTransaction
                     if (!ocpp_idTag.isEmpty() /*&& strcmp(tx_start_point.c_str(), "tx_only_remote")*/) {
                         //ID tag given in OpenEVSE dashboard & Auto-Authorize not disabled
                         String idTagCapture = ocpp_idTag;
                         authorize(idTagCapture.c_str(), [this, idTagCapture] (JsonObject payload) {
-                            if (idTagIsAccepted(payload)) {
-                                ESP_LOGI(TAG_EMSECC,"Session begin! idTag:%s \r\n",idTagCapture.c_str());
+                            if (idTagIsAccepted(payload) && !transactionInitialized) {
+                                
                                 beginSession(idTagCapture.c_str());
                                 transactionInitialized = true;
+                                ESP_LOGI(TAG_EMSECC,"Session begin! idTag:%s \r\n",idTagCapture.c_str());
                             } else {
                                 ESP_LOGD(TAG_EMSECC,"ID tag not recognized");
                             }
                         }, [this] () {
                             ESP_LOGD(TAG_EMSECC,"OCPP timeout");
                         });
-                         //sleep(5);
+                         //sleep(2);
                     } else {
                         //OpenEVSE cannot authorize this session -> wait for RemoteStartTransaction
                         ESP_LOGI(TAG_EMSECC,"Please authorize session");
@@ -537,10 +540,11 @@ unsigned long OcppTask::loop(MicroTasks::WakeReason reason){
             }
         }
 
-        if (transactionInitialized && getTransactionId()<0)
+
+        if (transactionInitialized && !transactionRunning && getTransactionId()<=0)
         {
-            ESP_LOGW(TAG_EMSECC, "Start new Transaction");
-            startTransaction(this->ocpp_idTag.c_str(),
+            //ESP_LOGW(TAG_EMSECC, "Start new Transaction");
+            startTransaction(ocpp_idTag.c_str(),
             [this](JsonObject conf)
             {
               string authConfirm;
@@ -555,9 +559,7 @@ unsigned long OcppTask::loop(MicroTasks::WakeReason reason){
                   //if( memcmp(conf["idTagInfo"] , "Accepted" ,8)==0 )
                   if (strcmp(conf["idTagInfo"]["status"], "Accepted") == 0)
                   {
-                    this->transactionRunning = true;
-
-                    sleep(5);// for test
+                    transactionRunning = true;
                   }
                   else
                   {
@@ -577,10 +579,10 @@ unsigned long OcppTask::loop(MicroTasks::WakeReason reason){
               }
               
             });
-            sleep(10);
-        }
+            
         
-        if (this->transactionRunning)
+        
+        if (transactionRunning)
         {
             ESP_LOGE(TAG_EMSECC, "Stop Transaction\n");
             stopTransaction(
@@ -590,10 +592,11 @@ unsigned long OcppTask::loop(MicroTasks::WakeReason reason){
             serializeJson(confirm, confirmMessage);
             ESP_LOGD(TAG_EMSECC, "Stop Transaction confirm:[%s]\r\n", confirmMessage.c_str());
             });
-            this->transactionRunning = false;
-            
+            transactionRunning = false;
+            endSession();
         }
-        
+       
+        }
 
         vehicleConnected = evse->isVehicleConnected();
 
