@@ -48,7 +48,9 @@ private:
     AUTHORIZE_PROCESS_STATE authorizeState ;
 
     bool transactionRunning = false;
-
+    bool remoteTranscation = false;
+    bool FinanceSuccess = false;
+    
     bool evIsPlugged = false;
     bool evRequestsEnergy = false;
     bool evIsLock = false;

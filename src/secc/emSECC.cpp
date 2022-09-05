@@ -384,6 +384,7 @@ void EMSECC::seccInitialize(void *param)
 
     if ((this->authStatus.authState != STATE_AUTHORIZING) && (this->authStatus.authState != STATE_AUTHORIZE_SUCCESS))
     {
+      
       RequestPayloadEVSE_getRFIDState reqGetRfidState;
       retCode = emEVSE->sendRequest(reqGetRfidState);
       if (retCode != COMM_SUCCESS)
@@ -444,6 +445,9 @@ void EMSECC::seccInitialize(void *param)
                 //const char* idTagInfo_expiryDate = doc["idTagInfo"]["expiryDate"]; // "2021-12-03T21:34:11.791Z"
                 if (strcmp(confMsg["idTagInfo"]["status"], "Accepted") == 0)
                   this->authStatus.authState = STATE_AUTHORIZE_SUCCESS;
+                if(!getSessionIdTag()){
+                  beginSession(this->authStatus.rfidTag.c_str());
+                }
               }
             },
             [this]() //Abort
@@ -511,6 +515,10 @@ void EMSECC::seccInitialize(void *param)
     (void)param;
     static uint32_t loopCount = 0;
     COMM_ERROR_E retCode = COMM_SUCCESS;
+
+     if(remoteTranscation =true){
+
+     }
 
     RequestPayloadEVSE_getEVSEState reqGetEvseState;
     retCode = emEVSE->sendRequest(reqGetEvseState);
@@ -693,15 +701,21 @@ void EMSECC::seccInitialize(void *param)
     }
 
     if (!evIsPlugged || !evRequestsEnergy || !evIsLock)
-      setFsmState(SECC_State_Finance, NULL);
+      
+      setFsmState(SECC_State_Finishing, NULL);
   };
 
   void EMSECC::seccFinance(void *param)
   {
     (void)param;
-    ESP_LOGD(TAG_EMSECC, "SECC Finance ...\r\n");
+    ESP_LOGD(TAG_EMSECC, "SECC Finance ...\r\n");//此处需判断缴费情况
     sleep(10);
-    setFsmState(SECC_State_Finishing, NULL);
+    this->FinanceSuccess = false;
+    if(FinanceSuccess){
+    endSession();
+    this->FinanceSuccess = true;
+    }
+   //setFsmState(SECC_State_Waitting, NULL);
   }
 
   void EMSECC::seccStopCharge(void *param)
@@ -718,11 +732,12 @@ void EMSECC::seccInitialize(void *param)
             String confirmMessage;
             serializeJson(confirm, confirmMessage);
             ESP_LOGD(TAG_EMSECC, "Stop Transaction confirm:[%s]\r\n", confirmMessage.c_str());
+            
           });
       this->transactionRunning = false;
+    
+    setFsmState(SECC_State_Finance, NULL);
     }
-
-
   }
 
   static bool notify = false;
@@ -907,7 +922,7 @@ void EMSECC::seccInitialize(void *param)
         if (getTransactionId() >= 0)
         {
           stopTransaction();
-          }
+        }
                                   
         //ulong reboot_timestamp = millis();
         //ulong scheduleReboot = 5000;
@@ -919,9 +934,47 @@ void EMSECC::seccInitialize(void *param)
 
     //远程开启交易的反馈
      setOnRemoteStartTransactionSendConf([this](JsonObject payload){
-        const char *
+        const char *connectorId =payload["connectorId"];
         const char *idtag = payload["idtag"] ;
-      
 
+        if(getTransactionId()<0){
+          this->authStatus.rfidTag.clear();
+          this->authStatus.rfidTag.concat(idtag);
+
+          setFsmState(SECC_State_Preparing, NULL);
+          remoteTranscation = true;
+        }
     });
+  
+
+      setOnRemoteStopTransactionSendConf([this](JsonObject payload){
+        if(getTransactionId()>0){
+          setFsmState(SECC_State_Finishing, NULL);
+        }
+
+      }
+      );
+
+      setOnUnlockConnector([](){
+        //向lpc发送指令 是否成功再返回；
+        return false;
+      });
+        //充电过程还能优化 先stoptransaction 再缴费再endSession  还有unlock 向CS报告错误信息
+      /*
+      addConnectorErrorCodeSampler([this] () {
+        if (evse->getEvseState() == OPENEVSE_STATE_GFI_FAULT ||
+                evse->getEvseState() == OPENEVSE_STATE_GFI_SELF_TEST_FAILED ||
+                evse->getEvseState() == OPENEVSE_STATE_NO_EARTH_GROUND ||
+                evse->getEvseState() == OPENEVSE_STATE_DIODE_CHECK_FAILED) {
+            return "GroundFailure";
+        }
+        return (const char *) NULL;
+    });*/
+      addConnectorErrorCodeSampler([this] () {
+        if () {
+            return "GroundFailure";
+        }
+        return (const char *) NULL;
+    });
+
   }

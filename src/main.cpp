@@ -209,6 +209,7 @@ OcppTask ocppMD = OcppTask();
 EVSEModel *evse;
 EMSECC *emSecc ;
 void setup() {
+    pinMode(GPIO_NUM_0,PULLUP);
     pinMode(SPI_CS,OUTPUT);
     hw_init();
     log_setup();
