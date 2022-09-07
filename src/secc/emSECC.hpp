@@ -46,6 +46,7 @@ private:
     bool authorizationProvided = false;
     bool successfullyAuthorized = false;
     AUTHORIZE_PROCESS_STATE authorizeState ;
+    COMM_ERROR_E retCode = COMM_SUCCESS;
 
     bool transactionRunning = false;
     bool remoteTranscation = false;

@@ -962,19 +962,18 @@ void EMSECC::seccInitialize(void *param)
         //充电过程还能优化 先stoptransaction 再缴费再endSession  还有unlock 向CS报告错误信息
       /*
       addConnectorErrorCodeSampler([this] () {
-        if (evse->getEvseState() == OPENEVSE_STATE_GFI_FAULT ||
-                evse->getEvseState() == OPENEVSE_STATE_GFI_SELF_TEST_FAILED ||
-                evse->getEvseState() == OPENEVSE_STATE_NO_EARTH_GROUND ||
-                evse->getEvseState() == OPENEVSE_STATE_DIODE_CHECK_FAILED) {
-            return "GroundFailure";
+        if (evse->getEvseState() == OPENEVSE_STATE_OVER_TEMPERATURE) {
+            return "HighTemperature";
         }
         return (const char *) NULL;
     });*/
       addConnectorErrorCodeSampler([this] () {
-        if () {
-            return "GroundFailure";
+        if (retCode != COMM_SUCCESS) {
+            return "COMMError";
         }
         return (const char *) NULL;
     });
+
+
 
   }
