@@ -204,12 +204,25 @@ static void esp_initialize_sntp(void)
 
 }
 
+static void ocpp_config(){
+  auto AuthorizeRemoteTxRequests = declareConfiguration("AuthorizeRemoteTxRequests", true, CONFIGURATION_VOLATILE, false, true, false, false);//只读为true 可改
+  auto ClockAlignedDataInterval = declareConfiguration("ClockAlignedDataInterval", 900);//只读为false
+  //auto ConnectorPhaseRotation = declareConfiguration("ConnectorPhaseRotation", "0.RST");//值以CSL格式报告，格式为:0.RST, 1.RST, 2.RTS
+  auto GetConfigurationMaxKeys = declareConfiguration("GetConfigurationMaxKeys", 20, CONFIGURATION_VOLATILE, false, true, false, false);
+  auto LocalAuthorizeOffline = declareConfiguration("LocalAuthorizeOffline", false);
+  auto LocalPreAuthorize = declareConfiguration("LocalPreAuthorize", false);
+  //auto MeterValuesAlignedData = declareConfiguration("MeterValuesAlignedData", false);//值以CSL格式报告
+  auto MeterValuesSampledData = declareConfiguration("MeterValuesSampledData", "Energy.Active.Import.Register");//值以CSL格式报告
+  auto ResetRetries = declareConfiguration("ResetRetries", 3);
+
+}
+
 EventLog eventLog;
 OcppTask ocppMD = OcppTask();
 EVSEModel *evse;
 EMSECC *emSecc ;
 void setup() {
-    pinMode(GPIO_NUM_0,PULLUP);
+    //pinMode(GPIO_NUM_0,PULLUP);
     pinMode(SPI_CS,OUTPUT);
     hw_init();
     log_setup();
@@ -236,21 +249,26 @@ void setup() {
     cellular_attach();
 #endif
 
-    eventLog.begin();
-    evse = new EVSEModel(hspi);
-    ocppMD.begin(evse,eventLog);
+    //eventLog.begin();
+    //evse = new EVSEModel(hspi);
+    //ocppMD.begin(evse,eventLog);
     emSecc = new EMSECC(hspi);
-    /*
+
+    //auto connectionTimeOut = declareConfiguration<int>("ConnectionTimeOut", 60, CONFIGURATION_FN, true, true, true, false);
+    //intervalConf = declareConfiguration<int>("HeartbeatInterval", 86400);
+    //MeterValueSampleInterval = declareConfiguration("MeterValueSampleInterval", 60);只读为false
+    //MeterValuesSampledDataMaxLength = declareConfiguration("MeterValuesSampledDataMaxLength", 4, CONFIGURATION_VOLATILE, false, true, false, false);只读为true
+    //ocpp_config();
     uint64_t mac = ESP.getEfuseMac();
     String cpSerialNum = String((unsigned long)mac , 16);
     String cpModel = String(CP_Model);
     String cpVendor = String(CP_Vendor);    
     String csUrl =  String(OCPP_URL)+cpVendor+'_'+cpModel+'_'+cpSerialNum ;
-
+    
     String ocppHost = OCPP_HOST;
     const char *ocpphost = ocppHost.c_str();
     OCPP_initialize(ocpphost, OCPP_PORT, csUrl.c_str());
-    */
+    
 
 
     

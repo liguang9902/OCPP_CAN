@@ -19,7 +19,7 @@
 
 using namespace std;
 using namespace ArduinoOcpp;
-//using namespace ArduinoOcpp::Ocpp16;
+using namespace ArduinoOcpp::Ocpp16;
 #include <ArduinoOcpp/MessagesV16/GetConfiguration.h>
 #include <ArduinoOcpp/Core/Configuration.h>
 #include <ArduinoOcpp/Core/ConfigurationKeyValue.h>
@@ -31,7 +31,8 @@ using ArduinoOcpp::Ocpp16::GetConfiguration;
 #include "ArduinoOcpp/Tasks/ChargePointStatus/ChargePointStatusService.h"
 
 #include "secc/SECCtest.h"
-
+#include "ArduinoOcpp/SimpleOcppOperationFactory.h"
+#include "ArduinoOcpp/MessagesV16/DataTransfer.h"
 EMSECC::EMSECC(SECC_SPIClass *pCommIF)
 {
   this->evIsLock = false;
@@ -182,8 +183,16 @@ void EMSECC::seccInitialize(void *param)
       });
 
       firmwareService->setInstallationStatusSampler(this->proxyInstallationStatusSampler);
-
       firmwareService->setOnInstall(this->proxyInstall);
+
+      
+
+      auto operation = makeOcppOperation();
+      auto msg = std::unique_ptr<OcppMessage>{nullptr};
+      //DataTransfer dataT("CustomVendor");
+      //dataT.createReq();
+      msg = std::unique_ptr<OcppMessage>(new DataTransfer("CustomVendor"));
+      operation->setOcppMessage(std::move(msg));
   }
   else
   {
@@ -709,7 +718,7 @@ void EMSECC::seccInitialize(void *param)
   {
     (void)param;
     ESP_LOGD(TAG_EMSECC, "SECC Finance ...\r\n");//此处需判断缴费情况
-    sleep(10);
+    sleep(3);
     this->FinanceSuccess = false;
     if(FinanceSuccess){
     endSession();
@@ -899,26 +908,36 @@ void EMSECC::seccInitialize(void *param)
       }
       //ledcWrite(AMPERAGE_PIN, pwmVal);    //PWM Output?
     });
-/*
+
+
+    setOnUnlockConnector([this](){
+     //向lpc发送指令 是否成功解锁电子锁，再返回；
+      return false;
+    });
+
     setConnectorPluggedSampler([this] () {
-        //return (bool) emEVSE->isVehicleConnected();
-        return true;
+       
+        return this->evIsPlugged;
     });
 
     setEvRequestsEnergySampler([this] () {
-        //return (bool) emEVSE->isCharging();
-        return true;
+        
+        return this->evRequestsEnergy;
     });
 
     setConnectorEnergizedSampler([this] () {
         //return emEVSE->isActive();
-        return true;
+        return this->evIsLock;
     });
-*/
+
  
     setOnResetSendConf([] (JsonObject payload) 
     {   
         const char *type = payload["type"] | "Soft";
+        if (!strcmp(type, "Hard")) {
+            ESP.restart();//还需要重启LPC等所有硬件
+        }
+
         if (getTransactionId() >= 0)
         {
           stopTransaction();
@@ -927,8 +946,8 @@ void EMSECC::seccInitialize(void *param)
         //ulong reboot_timestamp = millis();
         //ulong scheduleReboot = 5000;
         
-          sleep(5);
-          ESP.restart();
+        sleep(5);
+        ESP.restart();
 
       });
 
@@ -955,10 +974,7 @@ void EMSECC::seccInitialize(void *param)
       }
       );
 
-      setOnUnlockConnector([](){
-        //向lpc发送指令 是否成功再返回；
-        return false;
-      });
+
         //充电过程还能优化 先stoptransaction 再缴费再endSession  还有unlock 向CS报告错误信息
       /*
       addConnectorErrorCodeSampler([this] () {
@@ -969,10 +985,10 @@ void EMSECC::seccInitialize(void *param)
     });*/
       addConnectorErrorCodeSampler([this] () {
         if (retCode != COMM_SUCCESS) {
-            return "COMMError";
+            return "EVCommunicationError";
         }
         return (const char *) NULL;
-    });
+    });//还可以加ERROR
 
 
 
