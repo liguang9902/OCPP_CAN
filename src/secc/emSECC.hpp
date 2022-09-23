@@ -14,6 +14,8 @@
 #include "FirmwareProxy.hpp"
 #include "emSECC.hpp"
 #include "SECC_SPI.hpp"
+#include "MongooseHttpClient.h"
+#include "task/event_log.h"
 
 typedef enum {
     STATE_AUTHORIZE_UNKNOWN ,
@@ -75,8 +77,13 @@ private:
 //=Test function
     void    getOcppConfiguration();
     void    loadEvseBehavior();
+    void    initializeDiagnosticsService();
+    EventLog *eventLog;
+    bool diagSuccess = false, diagFailure = false;
+    MongooseHttpClient diagClient = MongooseHttpClient();
 public:
     EMSECC(SECC_SPIClass *pCommIF);
+    EMSECC(SECC_SPIClass *pCommIF,EventLog &eventLog);
     EMSECC();
     ~EMSECC();
 

@@ -2,10 +2,10 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <WString.h>
-#include <FS.h>
+//#include <FS.h>
 #include <core/NewOCPP.h>
 #include <ArduinoOcpp/Tasks/SmartCharging/SmartChargingService.h>
-
+#include "LITTLEFS.h"
 #include <esp_log.h>
 #include "emFiniteStateMachine.hpp"
 #include "ProtocolEVSE.hpp"
@@ -33,11 +33,41 @@ using ArduinoOcpp::Ocpp16::GetConfiguration;
 #include "secc/SECCtest.h"
 #include "ArduinoOcpp/SimpleOcppOperationFactory.h"
 #include "ArduinoOcpp/MessagesV16/DataTransfer.h"
+#include "task/event_log.h"
+#include "MongooseHttpClient.h"
+
 EMSECC::EMSECC(SECC_SPIClass *pCommIF)
 {
   this->evIsLock = false;
   this->evIsPlugged = false;
   this->evRequestsEnergy = false;
+
+  this->seccFSM[SECC_State_Unknown] = &EMSECC::seccIdle;
+  this->seccFSM[SECC_State_Initialize] = &EMSECC::seccInitialize;
+  this->seccFSM[SECC_State_EvseLink] = &EMSECC::seccLinkEvse;
+  this->seccFSM[SECC_State_BootOcpp] = &EMSECC::seccBootOcpp;
+  this->seccFSM[SECC_State_Waitting] = &EMSECC::seccWaiting;
+  this->seccFSM[SECC_State_Preparing] = &EMSECC::seccPreCharge;
+  this->seccFSM[SECC_State_Charging] = &EMSECC::seccCharging;
+  this->seccFSM[SECC_State_Finance] = &EMSECC::seccFinance;
+  this->seccFSM[SECC_State_Finishing] = &EMSECC::seccStopCharge;
+
+  this->seccFSM[SECC_State_maintaining] = &EMSECC::seccMaintaince;
+  this->seccFSM[SECC_State_SuspendedEVSE] = &EMSECC::evseMalfunction;
+  this->seccFSM[SECC_State_SuspendedSECC] = &EMSECC::seccMalfunction;
+
+  esp_sync_sntp(sysTimeinfo, 5);
+
+  emEVSE = new EVSE_Interfacer(pCommIF);
+  setFsmState(SECC_State_Unknown, NULL);
+}
+
+EMSECC::EMSECC(SECC_SPIClass *pCommIF,EventLog &eventLog)
+{
+  this->evIsLock = false;
+  this->evIsPlugged = false;
+  this->evRequestsEnergy = false;
+  this->eventLog = &eventLog;
 
   this->seccFSM[SECC_State_Unknown] = &EMSECC::seccIdle;
   this->seccFSM[SECC_State_Initialize] = &EMSECC::seccInitialize;
@@ -109,6 +139,8 @@ void EMSECC::secc_loop()
   */
 
   //上一个状态检测到预定的事件后 ， 将状态变更到下一个状态
+  //eventLog->log(21);
+  //File eventFile = USE_FS.open("/txt","r");
   SECC_State currentState = this->getFsmState();
   if (currentState != lastState)
   {
@@ -148,6 +180,7 @@ void EMSECC::seccInitialize(void *param)
   {
     ESP_LOGD(TAG_EMSECC, "seccInitialize %f", Tfun(paraA));
     loadEvseBehavior();
+    initializeDiagnosticsService();
     FirmwareService *firmwareService = getFirmwareService();
     firmwareService->setDownloadStatusSampler(this->proxyDownloadStatusSampler);
     //firmwareService->setOnDownload( this->proxyDownload );
@@ -717,8 +750,8 @@ void EMSECC::seccInitialize(void *param)
   void EMSECC::seccFinance(void *param)
   {
     (void)param;
-    ESP_LOGD(TAG_EMSECC, "SECC Finance ...\r\n");//此处需判断缴费情况
-    sleep(3);
+    //ESP_LOGD(TAG_EMSECC, "SECC Finance ...\r\n");//此处需判断缴费情况
+    //sleep(3);
     this->FinanceSuccess = false;
     if(FinanceSuccess){
     endSession();
@@ -865,10 +898,7 @@ void EMSECC::seccInitialize(void *param)
   }
 
   void EMSECC::loadEvseBehavior(){
-
-
-  
-
+    
      setPowerActiveImportSampler([this]() {
         //return (float) (emEVSE->getAmps() * emEVSE->getVoltage());
         return 5000;
@@ -989,7 +1019,128 @@ void EMSECC::seccInitialize(void *param)
         }
         return (const char *) NULL;
     });//还可以加ERROR
+    //ConnectorLockFailure、ReaderFailure等，见76页
 
 
+  }
+
+  void EMSECC::initializeDiagnosticsService(){
+      ArduinoOcpp::DiagnosticsService *diagService = getDiagnosticsService();
+    if (diagService) {
+        diagService->setOnUploadStatusSampler([this] () {
+            if (diagFailure) {
+                return ArduinoOcpp::UploadStatus::UploadFailed;
+            } else if (diagSuccess) {
+                return ArduinoOcpp::UploadStatus::Uploaded;
+            } else {
+                return ArduinoOcpp::UploadStatus::NotUploaded;
+            }
+        });
+
+        diagService->setOnUpload([this] (const std::string &location, ArduinoOcpp::OcppTimestamp &startTime, ArduinoOcpp::OcppTimestamp &stopTime) {
+            
+            //reset reported state
+            diagSuccess = false;
+            diagFailure = false;
+
+            //check if input URL is valid
+            unsigned int port_i = 0;
+            struct mg_str scheme, query, fragment;
+            if (mg_parse_uri(mg_mk_str(location.c_str()), &scheme, NULL, NULL, &port_i, NULL, &query, &fragment)) {
+                
+                ESP_LOGI(TAG_EMSECC,"[ocpp] Diagnostics upload, invalid URL: %s",location.c_str());
+                diagFailure = true;
+                return false;
+            }
+
+            if (eventLog == NULL) {
+                diagFailure = true;
+                return false;
+            }
+
+            //create file to upload
+            #define BOUNDARY_STRING "-----------------------------WebKitFormBoundary7MA4YWxkTrZu0gW025636501"
+            const char *bodyPrefix PROGMEM = BOUNDARY_STRING "\r\n"
+                    "Content-Disposition: form-data; name=\"file\"; filename=\"diagnostics.log\"\r\n"
+                    "Content-Type: application/octet-stream\r\n\r\n";
+            const char *bodySuffix PROGMEM = "\r\n\r\n" BOUNDARY_STRING "--\r\n";
+            const char *overflowMsg PROGMEM = "{\"diagnosticsMsg\":\"requested search period exceeds maximum diagnostics upload size\"}";
+
+            const size_t MAX_BODY_SIZE = 10000; //limit length of message
+            String body = String('\0');
+            body.reserve(MAX_BODY_SIZE);
+            body += bodyPrefix;
+            body += "[";
+            const size_t SUFFIX_RESERVED_AREA = MAX_BODY_SIZE - strlen(bodySuffix) - strlen(overflowMsg) - 2;
+
+            bool firstEntry = true;
+            bool overflow = false;
+            for (uint32_t i = 0; i <= (eventLog->getMaxIndex() - eventLog->getMinIndex()) && !overflow; i++) {
+                uint32_t index = eventLog->getMinIndex() + i;
+
+                eventLog->enumerate(index, [this, startTime, stopTime, &body, SUFFIX_RESERVED_AREA, &firstEntry, &overflow] (String time, EventType type, const String &logEntry, EvseState managerState, uint8_t evseState, uint32_t evseFlags, uint32_t pilot, double energy, uint32_t elapsed, double temperature, double temperatureMax, uint8_t divertMode, uint8_t shaper) {
+                    if (overflow) return;
+                    ArduinoOcpp::OcppTimestamp timestamp = ArduinoOcpp::OcppTimestamp();
+                    if (!timestamp.setTime(time.c_str())) {
+                        
+                        ESP_LOGD(TAG_EMSECC,"[ocpp] Diagnostics upload, cannot parse timestamp format:%s ",time);
+                        return;
+                    }
+
+                    if (timestamp < startTime || timestamp > stopTime) {
+                        return;
+                    }
+
+                    if (body.length() + logEntry.length() + 10 < SUFFIX_RESERVED_AREA) {
+                        if (firstEntry)
+                            firstEntry = false;
+                        else
+                            body += ",";
+                        
+                        body += logEntry;
+                        body += "\n";
+                    } else {
+                        overflow = true;
+                        return;
+                    }
+                });
+            }
+
+            if (overflow) {
+                if (!firstEntry)
+                    body += ",\r\n";
+                body += overflowMsg;
+            }
+
+            body += "]";
+
+            body += bodySuffix;
+
+            
+            ESP_LOGI(TAG_EMSECC,"[ocpp] POST diagnostics file to %s",location.c_str());
+
+            MongooseHttpClientRequest *request =
+                    diagClient.beginRequest(location.c_str());
+            request->setMethod(HTTP_POST);
+            request->addHeader("Content-Type", "multipart/form-data; boundary=" BOUNDARY_STRING);
+            request->setContent(body.c_str());
+            request->onResponse([this] (MongooseHttpClientResponse *response) {
+                if (response->respCode() == 200) {
+                    diagSuccess = true;
+                } else {
+                    diagFailure = true;
+                }
+            });
+            request->onClose([this] () {
+                if (!diagSuccess) {
+                    //triggered onClose before onResponse
+                    diagFailure = true;
+                }
+            });
+            diagClient.send(request);
+            
+            return true;
+        });
+    }
 
   }
