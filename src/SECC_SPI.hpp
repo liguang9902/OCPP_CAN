@@ -14,6 +14,12 @@ public:
     uint8_t  _bitOrder;
     uint8_t  _dataMode;
 };*/
+
+struct TransferData{
+    uint8_t  data[256]={0,};
+    size_t   size;
+};
+
 #define SPI_HAS_TRANSACTION
 class SECC_SPIClass: public SPIClass
 {
@@ -29,6 +35,7 @@ private:
     uint32_t _freq;
     bool _inTransaction;
     
+    //TransferData  transferdata;
 public:
     SECC_SPIClass(uint8_t spi_bus=HSPI);
 
@@ -44,8 +51,10 @@ public:
     //void flush( bool txOnly);
     //size_t write(uint8_t);
     //size_t write(const uint8_t *buffer, size_t size);
-    void  SPIString(const uint8_t *data,size_t length);
-
+    void  SPIsend( uint8_t *data,size_t length);
+    size_t  SPIrev(uint8_t *data,size_t length);
+    TransferData SPItransfer(uint8_t *data,size_t length);
+    void SPItransfer(uint8_t *data,uint8_t *rxdata,size_t length);
     //esp_err_t spi_write(spi_device_handle_t spi, uint8_t *data, uint8_t  len);
 
     //spi_t * bus(){ return _spi; }

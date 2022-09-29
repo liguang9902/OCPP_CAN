@@ -33,9 +33,10 @@ class EVSE_Interfacer
 {
 private:
     SECC_SPIClass *pCommIF;
-    size_t evseif_SendBuffer(const uint8_t *txBuffer, size_t length);
+    size_t evseif_SendBuffer(uint8_t *txBuffer, size_t length);
     size_t evseif_RecvBuffer_sync(uint8_t *rxBuffer, size_t maxReceive, uint32_t timeout=EVSE_RESPONSE_TIMEOUT);
-
+    TransferData evseif_SPIbuffer(uint8_t *buffer, size_t length);
+    void evseif_SPIbuffer(uint8_t *buffer,uint8_t *rxbuffer,size_t length);
 protected:
 
 
@@ -50,6 +51,9 @@ public:
     template <typename TPayload>
     COMM_ERROR_E receiveResponse(TPayload& payload);
     COMM_ERROR_E receiveResponse_upgrade(ResponsePayloadEVSE_upgrade &resPayloadEVSE_upgrade);
+
+    template<typename T,typename R>
+    COMM_ERROR_E transferbuffer(T& payload,R& repayload);
 };
 
 /*Template Implement=======================================================================================*/
@@ -144,4 +148,71 @@ void EVSE_Interfacer::sendRequest(TPayload& payload){
 void EVSE_Interfacer::receiveResponse(TPayload& payload){
 
 }; */
+
+template<typename T,typename R>
+  COMM_ERROR_E EVSE_Interfacer::transferbuffer(T& payload,R& repayload){
+
+  uint16_t payloadSize = sizeof(PayloadEVSE) == sizeof(T) ? 0 : sizeof(T);
+  uint16_t packetSize = sizeof(PacketEVSE) + CRC_SIZE + payloadSize;
+  PacketEVSE *packet = (PacketEVSE *)malloc(packetSize);
+  COMM_ERROR_E retCode = COMM_SUCCESS;
+  if (packet == NULL)
+  {
+    return COMM_ERROR_MALLOC;
+  }
+
+  if(packetSize != packet_ProtocolRequest(payload, *packet)) 
+  {
+    free(packet);
+    return COMM_ERROR_PacketSize;
+  }
+
+  TransferData  ReceiveData;
+  ReceiveData = evseif_SPIbuffer((uint8_t *)packet,IFRX_BUFFER_SIZE);
+  /*
+  uint8_t ifRxBuffer[IFRX_BUFFER_SIZE] = {
+      0,
+  };
+  evseif_SPIbuffer((uint8_t *)packet,ifRxBuffer,IFRX_BUFFER_SIZE);*/
+  ssize_t rxBytes = ReceiveData.size;
+      
+    if (!rxBytes){
+    ESP_LOGE(TAG_INTF,"Receive Response  timeout :%d(received:%d bytes ,%s) expected:%d" , 
+      COMM_ERROR_ReceiveTimeout ,rxBytes , ifCommErrorDesc[COMM_ERROR_ReceiveTimeout].c_str() , repayload.evsePayloadSize);
+    return COMM_ERROR_ReceiveTimeout;
+  }
+
+  ESP_LOGD(TAG_INTF,"Receive Response %d Bytes:\r\n" , rxBytes);
+  ESP_LOG_BUFFER_HEX(TAG_INTF ,ReceiveData.data , rxBytes);  
+
+  if (rxBytes > IFRX_BUFFER_SIZE){
+    ESP_LOGD(TAG_INTF,"Receive Size out of range! received %d Bytes:\r\n" , rxBytes);
+    return COMM_ERROR_ReceiveSize;
+  }
+
+  PacketResponse *repacket = (PacketResponse *)ReceiveData.data;
+    uint16_t repayloadSize =  repayload.evsePayloadSize ? repayload.evsePayloadSize : LittleToBig(repacket->Length) ;   
+  if(repayloadSize){
+    char commandId[COMMAND_SIZE+1]={0,};
+    char tempString[IFRX_BUFFER_SIZE]={0,};
+    memcpy(commandId ,repacket , COMMAND_SIZE);
+    memcpy(tempString , repacket->Payload , repayloadSize);
+    ESP_LOGD(TAG_INTF , "Command:[%s]Payload:(l=%d)[%s]  CRC:0x[%02x %02x]\r\n" , 
+    commandId ,repayloadSize ,tempString , repacket->Payload[repayloadSize] , repacket->Payload[repayloadSize+1]);
+    //memset(tempString,0,payloadSize);
+  }
+
+  int32_t ret = unpack_ProtocolResponse(*repacket, repayload);
+  if(ret != repayloadSize){
+    if(ret < 0){
+      ESP_LOGE(TAG_INTF,"unpack_ProtocolResponse  error:%d(%s) expected:%d\r\n" , ret , protocolErrorDesc[(ProtocolUnpackError)ret].c_str() , repayloadSize);
+      retCode =  COMM_ERROR_Unpack;
+    } else {
+      ESP_LOGE(TAG_INTF,"unpack_ProtocolResponse  size error:%d expected:%d\r\n" , ret , repayloadSize);
+      retCode =  COMM_ERROR_PacketSize;
+    }
+}
+  //memset(ReceiveData.data, 0, IFRX_BUFFER_SIZE);
+  return  retCode;
+    }
 #endif

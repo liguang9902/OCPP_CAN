@@ -25,16 +25,16 @@ EVSE_Interfacer::~EVSE_Interfacer()
 {
 }
 
-size_t EVSE_Interfacer::evseif_SendBuffer(const uint8_t *txBuffer, size_t length)
+size_t EVSE_Interfacer::evseif_SendBuffer(uint8_t *txBuffer, size_t length)
 {
   //111
-  this->pCommIF->SPIString(txBuffer,length);
+  this->pCommIF->SPIsend(txBuffer,length);
   this->pCommIF->flush();
   return length;
 }
 
 #define UART_RX_PERIOD 500
-size_t EVSE_Interfacer::evseif_RecvBuffer_sync(uint8_t *rxBuffer, size_t maxReceive, uint32_t timeout)
+size_t EVSE_Interfacer::evseif_RecvBuffer_sync( uint8_t *rxBuffer, size_t maxReceive, uint32_t timeout)
 {
   unsigned long start = millis();
   unsigned long lastRecvTime = 0;
@@ -49,26 +49,35 @@ size_t EVSE_Interfacer::evseif_RecvBuffer_sync(uint8_t *rxBuffer, size_t maxRece
       break;
     //return recvBytes;
     //if (this->pCommIF->available())
-
+/*
     {
       if (this->pCommIF->available() > recvBytes)
       {
         recvBytes = this->pCommIF->available();
         lastRecvTime = now;
       }
-    }//111
+    }//111*/
 
     if (recvBytes >= maxReceive)
       break;
     //return maxReceive;
   }
-  //return this->pCommIF->read(rxBuffer , recvBytes);
+  //return this->pCommIF->SPIString(rxBuffer , recvBytes);
 
-  //return this->pCommIF->readBytes(rxBuffer, (recvBytes > IFRX_BUFFER_SIZE) ? IFRX_BUFFER_SIZE:recvBytes );111
-  return recvBytes;
+  //uint8_t reBytes = this->pCommIF->SPIString(rxBuffer, (recvBytes > IFRX_BUFFER_SIZE) ? IFRX_BUFFER_SIZE:recvBytes );
+  //return sizeof(reBytes);
+  //return recvBytes;
+  return this->pCommIF->SPIrev(rxBuffer, (recvBytes > IFRX_BUFFER_SIZE) ? IFRX_BUFFER_SIZE:recvBytes);
 }
 
+TransferData EVSE_Interfacer::evseif_SPIbuffer(uint8_t *buffer, size_t length){
+    return  this->pCommIF->SPItransfer(buffer, length);
+}
 
+void EVSE_Interfacer::evseif_SPIbuffer(uint8_t *buffer,uint8_t *rxbuffer,size_t length)
+{
+  this->pCommIF->SPItransfer(buffer,rxbuffer,length);
+}
 //模板函数的特化 ， 处理比较特殊的协议类型 
 //由于成员函数的特化的多重定义问题没有很好的解决 ， 暂时....
 //=Upgrade=======================================================================================

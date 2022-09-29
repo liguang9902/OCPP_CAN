@@ -5,7 +5,7 @@
 #include "Arduino.h"
 //#include "SPI.h"
 
-
+#include "ProtocolEVSE.hpp"
 
 
 SECC_SPIClass::SECC_SPIClass(uint8_t spi_bus)
@@ -56,8 +56,52 @@ void  SECC_SPIClass::flush(void)
 }*/
 
 
-void SECC_SPIClass::SPIString(const uint8_t *data,size_t length){
+void SECC_SPIClass::SPIsend( uint8_t *data,size_t length){
     static const int spiClk = 20000000;
+    uint8_t RBuff;
+    this->beginTransaction(SPISettings(spiClk, MSBFIRST, SPI_MODE0));
+    digitalWrite(PIN_NUM_CS, LOW); //pull SS slow to prep other end for transfer
+  
+    /*char c;
+    for (const char *da=data.c_str();c=*da;da++){
+        spi->transfer(c);
+    }*/
+    /*for (size_t i = 0; i < length; i++)
+    {
+        RBuff =  this->transfer(*data);
+        *data++;
+    }*/
+     //this->transfer(*data);
+     
+    this->transfer(data,length);
+    digitalWrite(PIN_NUM_CS, HIGH); //pull ss high to signify end of data transfer
+    this->endTransaction();
+    //return RBuff;
+}
+
+size_t  SECC_SPIClass::SPIrev(uint8_t *data,size_t length){
+    static const int spiClk = 20000000;
+    uint8_t ifRxBuffer[256] = {
+      0,
+    };
+    this->beginTransaction(SPISettings(spiClk, MSBFIRST, SPI_MODE0));
+    digitalWrite(PIN_NUM_CS, LOW); //pull SS slow to prep other end for transfer
+  
+    for (size_t i = 0; i < length; i++)
+    {
+        ifRxBuffer[i] =  this->transfer(*data);
+        *data++;
+    }
+     //this->transfer(*data);
+    this->transfer(data,length);
+    digitalWrite(PIN_NUM_CS, HIGH); //pull ss high to signify end of data transfer
+    this->endTransaction();
+    return sizeof(ifRxBuffer)/sizeof(ifRxBuffer[0]);
+}
+TransferData SECC_SPIClass::SPItransfer( uint8_t *data,size_t length){
+    TransferData  transferdata;
+    static const int spiClk = 20000000;
+    //uint8_t RBuff[]={0,};
     this->beginTransaction(SPISettings(spiClk, MSBFIRST, SPI_MODE0));
     digitalWrite(PIN_NUM_CS, LOW); //pull SS slow to prep other end for transfer
   
@@ -67,12 +111,32 @@ void SECC_SPIClass::SPIString(const uint8_t *data,size_t length){
     }*/
     for (size_t i = 0; i < length; i++)
     {
-        this->transfer(*data);
-        *data++;
+        transferdata.data[i] =  this->transfer(*data++);
+        //*data++;
     }
-     //this->transfer(*data);
+    using namespace std;
+    PacketResponse *repacket = (PacketResponse *)transferdata.data;
+    ESP_LOGI(TAG,"CommandID:%s",repacket->CommandID);
+    //this->transfer(data,length);
     digitalWrite(PIN_NUM_CS, HIGH); //pull ss high to signify end of data transfer
     this->endTransaction();
+    transferdata.size = sizeof(transferdata.data)/sizeof(transferdata.data[0]);
+    return transferdata;
+    //return RBuff;
+}
+
+void SECC_SPIClass::SPItransfer(uint8_t *data,uint8_t *rxdata,size_t length){
+
+
+    static const int spiClk = 20000000;
+
+    this->beginTransaction(SPISettings(spiClk, MSBFIRST, SPI_MODE0));
+    digitalWrite(PIN_NUM_CS, LOW); //pull SS slow to prep other end for transfer
+    this->transferBytes(data,rxdata,length);
+
+    digitalWrite(PIN_NUM_CS, HIGH); //pull ss high to signify end of data transfer
+    this->endTransaction();
+
 }
 
 SECC_SPIClass SECC_SPI(VSPI);

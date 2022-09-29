@@ -139,8 +139,6 @@ void EMSECC::secc_loop()
   */
 
   //上一个状态检测到预定的事件后 ， 将状态变更到下一个状态
-  //eventLog->log(21);
-  //File eventFile = USE_FS.open("/txt","r");
   SECC_State currentState = this->getFsmState();
   if (currentState != lastState)
   {
@@ -244,7 +242,7 @@ void EMSECC::seccInitialize(void *param)
     {
       //--GetTime----------------------------------------------------------------------------------------------------------------------
       RequestPayloadEVSE_getTime reqGettime;
-      retCode = emEVSE->sendRequest<RequestPayloadEVSE_getTime>(reqGettime);
+      //retCode = emEVSE->sendRequest<RequestPayloadEVSE_getTime>(reqGettime);
       if (retCode != COMM_SUCCESS)
       {
         ESP_LOGE(TAG_EMSECC, "Send Request_getTime error:%d(%s) while seccLinkEvse\r\n", retCode, ifCommErrorDesc[retCode].c_str());
@@ -254,13 +252,14 @@ void EMSECC::seccInitialize(void *param)
 
       ResponsePayloadEVSE_getTime resGettime;
       //retCode = emEVSE->receiveResponse(resGettime);
-      retCode = receiveRGettime(resGettime);
+      //retCode = receiveRGettime(resGettime);
+      retCode = emEVSE->transferbuffer(reqGettime,resGettime);
       if (retCode != COMM_SUCCESS)
       {
         ESP_LOGE(TAG_EMSECC, "Receive Response_getTime error!\r\n");
-        //ESP_LOGE(TAG_EMSECC, "Receive Response_getTime error:%d(%s) while seccLinkEvse\r\n", retCode ,ifCommErrorDesc[retCode].c_str() );
-        //setFsmState(SECC_State_SuspendedEVSE, NULL);
-        setFsmState(SECC_State_BootOcpp, NULL);
+        ESP_LOGE(TAG_EMSECC, "Receive Response_getTime error:%d(%s) while seccLinkEvse\r\n", retCode ,ifCommErrorDesc[retCode].c_str() );
+        setFsmState(SECC_State_SuspendedEVSE, NULL);
+        //setFsmState(SECC_State_BootOcpp, NULL);
         return;
       };
       ESP_LOGI(TAG_EMSECC, "EVSE_Interfacer receiveResponse :<ResponsePayloadEVSE_getTime> decode(%d):[%d-%d-%dT%d:%d:%d]\n",

@@ -71,10 +71,10 @@ static void hw_init()
     
       ESP_Uart1.println("[Bootting...]\r\n"); */
     
-
-    
-    hspi->begin(SPI_SCK ,SPI_MISO ,SPI_MOSI ,SPI_CS);
     pinMode(SPI_CS,OUTPUT);
+    digitalWrite(SPI_CS, HIGH);
+    hspi->begin(SPI_SCK ,SPI_MISO ,SPI_MOSI ,SPI_CS);
+
 }
 
 static void log_setup()
@@ -259,7 +259,7 @@ void setup() {
     //ocppMD.begin(evse,eventLog);
     
     Mongoose.begin();
-    Mongoose.setRootCa(root_ca);
+    //Mongoose.setRootCa(root_ca);
     emSecc = new EMSECC(hspi,eventLog);
     //da =new dia(eventLog);
     
