@@ -168,13 +168,13 @@ template<typename T,typename R>
   }
 
   TransferData  ReceiveData;
-  ReceiveData = evseif_SPIbuffer((uint8_t *)packet,IFRX_BUFFER_SIZE);
-  /*
+ //ReceiveData = evseif_SPIbuffer((uint8_t *)packet,IFRX_BUFFER_SIZE);
+  
   uint8_t ifRxBuffer[IFRX_BUFFER_SIZE] = {
       0,
   };
-  evseif_SPIbuffer((uint8_t *)packet,ifRxBuffer,IFRX_BUFFER_SIZE);*/
-  ssize_t rxBytes = ReceiveData.size;
+  evseif_SPIbuffer((uint8_t *)packet,ifRxBuffer,IFRX_BUFFER_SIZE);
+  /*ssize_t rxBytes = ReceiveData.size;
       
     if (!rxBytes){
     ESP_LOGE(TAG_INTF,"Receive Response  timeout :%d(received:%d bytes ,%s) expected:%d" , 
@@ -188,9 +188,9 @@ template<typename T,typename R>
   if (rxBytes > IFRX_BUFFER_SIZE){
     ESP_LOGD(TAG_INTF,"Receive Size out of range! received %d Bytes:\r\n" , rxBytes);
     return COMM_ERROR_ReceiveSize;
-  }
+  }*/
 
-  PacketResponse *repacket = (PacketResponse *)ReceiveData.data;
+  PacketResponse *repacket = (PacketResponse *)ifRxBuffer;
     uint16_t repayloadSize =  repayload.evsePayloadSize ? repayload.evsePayloadSize : LittleToBig(repacket->Length) ;   
   if(repayloadSize){
     char commandId[COMMAND_SIZE+1]={0,};

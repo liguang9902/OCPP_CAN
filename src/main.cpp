@@ -70,7 +70,7 @@ static void hw_init()
     ESP_Uart1.begin(115200, SERIAL_8N1, UART1_RX_PIN, UART1_TX_PIN);
     
       ESP_Uart1.println("[Bootting...]\r\n"); */
-    
+    pinMode(34,INPUT);
     pinMode(SPI_CS,OUTPUT);
     digitalWrite(SPI_CS, HIGH);
     hspi->begin(SPI_SCK ,SPI_MISO ,SPI_MOSI ,SPI_CS);

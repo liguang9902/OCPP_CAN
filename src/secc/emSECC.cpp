@@ -242,7 +242,7 @@ void EMSECC::seccInitialize(void *param)
     {
       //--GetTime----------------------------------------------------------------------------------------------------------------------
       RequestPayloadEVSE_getTime reqGettime;
-      //retCode = emEVSE->sendRequest<RequestPayloadEVSE_getTime>(reqGettime);
+      retCode = emEVSE->sendRequest<RequestPayloadEVSE_getTime>(reqGettime);
       if (retCode != COMM_SUCCESS)
       {
         ESP_LOGE(TAG_EMSECC, "Send Request_getTime error:%d(%s) while seccLinkEvse\r\n", retCode, ifCommErrorDesc[retCode].c_str());
@@ -251,9 +251,9 @@ void EMSECC::seccInitialize(void *param)
       };
 
       ResponsePayloadEVSE_getTime resGettime;
-      //retCode = emEVSE->receiveResponse(resGettime);
+      retCode = emEVSE->receiveResponse(resGettime);
       //retCode = receiveRGettime(resGettime);
-      retCode = emEVSE->transferbuffer(reqGettime,resGettime);
+
       if (retCode != COMM_SUCCESS)
       {
         ESP_LOGE(TAG_EMSECC, "Receive Response_getTime error!\r\n");

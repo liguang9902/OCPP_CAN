@@ -28,7 +28,8 @@ EVSE_Interfacer::~EVSE_Interfacer()
 size_t EVSE_Interfacer::evseif_SendBuffer(uint8_t *txBuffer, size_t length)
 {
   //111
-  this->pCommIF->SPIsend(txBuffer,length);
+  //this->pCommIF->SPIsend(txBuffer,length);
+  this->pCommIF->SPItransfer(txBuffer,NULL,length);
   this->pCommIF->flush();
   return length;
 }
@@ -67,7 +68,18 @@ size_t EVSE_Interfacer::evseif_RecvBuffer_sync( uint8_t *rxBuffer, size_t maxRec
   //uint8_t reBytes = this->pCommIF->SPIString(rxBuffer, (recvBytes > IFRX_BUFFER_SIZE) ? IFRX_BUFFER_SIZE:recvBytes );
   //return sizeof(reBytes);
   //return recvBytes;
-  return this->pCommIF->SPIrev(rxBuffer, (recvBytes > IFRX_BUFFER_SIZE) ? IFRX_BUFFER_SIZE:recvBytes);
+
+      uint8_t txB[] ={1,2,3,4,5,6};
+  if(digitalRead(34)==LOW){
+      
+    this->pCommIF->SPItransfer(NULL,rxBuffer,256);
+  }
+  else{
+    ESP_LOGE(TAG_INTF,"GPIO34 NOT ready"  );
+  }
+ 
+  return sizeof(rxBuffer)/sizeof(rxBuffer[0]);
+  //return this->pCommIF->SPIrev(rxBuffer, (recvBytes > IFRX_BUFFER_SIZE) ? IFRX_BUFFER_SIZE:recvBytes);
 }
 
 TransferData EVSE_Interfacer::evseif_SPIbuffer(uint8_t *buffer, size_t length){
