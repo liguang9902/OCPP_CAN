@@ -251,8 +251,8 @@ void EMSECC::seccInitialize(void *param)
       };
 
       ResponsePayloadEVSE_getTime resGettime;
-      retCode = emEVSE->receiveResponse(resGettime);
-      //retCode = receiveRGettime(resGettime);
+      //retCode = emEVSE->receiveResponse(resGettime);
+      retCode = receiveRGettime(resGettime);
 
       if (retCode != COMM_SUCCESS)
       {

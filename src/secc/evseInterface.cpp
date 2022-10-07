@@ -69,16 +69,15 @@ size_t EVSE_Interfacer::evseif_RecvBuffer_sync( uint8_t *rxBuffer, size_t maxRec
   //return sizeof(reBytes);
   //return recvBytes;
 
-      uint8_t txB[] ={1,2,3,4,5,6};
   if(digitalRead(34)==LOW){
       
-    this->pCommIF->SPItransfer(NULL,rxBuffer,256);
+    this->pCommIF->SPItransfer(NULL,rxBuffer,IFRX_BUFFER_SIZE);
   }
   else{
-    ESP_LOGE(TAG_INTF,"GPIO34 NOT ready"  );
+    ESP_LOGE(TAG_INTF,"GPIO34 NOT ready");
   }
  
-  return sizeof(rxBuffer)/sizeof(rxBuffer[0]);
+  return sizeof(rxBuffer);
   //return this->pCommIF->SPIrev(rxBuffer, (recvBytes > IFRX_BUFFER_SIZE) ? IFRX_BUFFER_SIZE:recvBytes);
 }
 
@@ -129,7 +128,7 @@ COMM_ERROR_E EVSE_Interfacer::sendRequest_upgrade(RequestPayloadEVSE_upgrade &re
   free(packet); 
 
   //uint8_t rxTemp[8];
-  delay(500);
+  delay(100);//传输时间？
 
   return COMM_SUCCESS;
 
