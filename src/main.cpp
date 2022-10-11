@@ -51,6 +51,9 @@ bool networkReady =  false;
 #include "DiagService.h"
 #include "task/root_ca.h"
 #include "LittleFS.h"
+//#include "SoftwareSerial.h"
+#include "RS485/enmMeter.h"
+
 #define TAG  "TAG:"
 #define SPI_SCK 14
 #define SPI_MISO 12
@@ -59,6 +62,8 @@ bool networkReady =  false;
 //static const int spiClk = 20000000;
 SECC_SPIClass * hspi = new SECC_SPIClass(HSPI);
 
+//SoftwareSerial IECinterface(35, 33);
+int DE_RE=32;
 static void hw_init()
 {
     Serial.begin(115200);
@@ -75,6 +80,9 @@ static void hw_init()
     digitalWrite(SPI_CS, HIGH);
     hspi->begin(SPI_SCK ,SPI_MISO ,SPI_MOSI ,SPI_CS);
 
+  //IECinterface.begin(115200);
+  pinMode(DE_RE,OUTPUT);
+  digitalWrite(DE_RE,LOW);  
 }
 
 static void log_setup()
@@ -224,6 +232,9 @@ EventLog eventLog;
 OcppTask ocppMD = OcppTask();
 EVSEModel *evse;
 EMSECC *emSecc ;
+RS485IF MeterIF(35,33);
+long previousTime=0;
+long interval= 10000;
 void setup() {
     //pinMode(GPIO_NUM_0,PULLUP);
     USE_FS.begin(true);
@@ -257,10 +268,10 @@ void setup() {
     eventLog.begin();
     //evse = new EVSEModel(hspi);
     //ocppMD.begin(evse,eventLog);
-    
+
     Mongoose.begin();
     //Mongoose.setRootCa(root_ca);
-    emSecc = new EMSECC(hspi,eventLog);
+    emSecc = new EMSECC(hspi);
     //da =new dia(eventLog);
     
     //auto connectionTimeOut = declareConfiguration<int>("ConnectionTimeOut", 60, CONFIGURATION_FN, true, true, true, false);
@@ -303,6 +314,12 @@ void loop() {
   //da->begin();
   emSecc->secc_loop();
   OCPP_loop(); 
-  Mongoose.poll(0);
+  //Mongoose.poll(0);
   //MicroTask.update();
+
+	unsigned long currentTime=millis();
+	if(currentTime - previousTime > interval){
+  	previousTime=currentTime;
+    MeterIF.loop();
+  }
 }

@@ -11,6 +11,7 @@ using namespace std;
 #define TAG_INTF    "Interface:"
 #define TAG_PROT    "Protocol:"
 #define TAG_PROXY   "Proxy:"
+#define TAG_RS485   "RS485:"
 
 #define LittleToBig(x) (((uint8_t)(x&0x00FF)<<8) | (uint8_t)((x&0xFF00)>>8))
 #define BigToLittle(x) LittleToBig(x)
