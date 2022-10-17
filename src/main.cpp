@@ -234,7 +234,7 @@ EVSEModel *evse;
 EMSECC *emSecc ;
 RS485IF MeterIF(35,33);
 long previousTime=0;
-long interval= 10000;
+long interval=16000;
 void setup() {
     //pinMode(GPIO_NUM_0,PULLUP);
     USE_FS.begin(true);
