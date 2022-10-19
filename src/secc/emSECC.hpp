@@ -14,8 +14,9 @@
 #include "FirmwareProxy.hpp"
 #include "emSECC.hpp"
 #include "SECC_SPI.hpp"
-#include "MongooseHttpClient.h"
-#include "task/event_log.h"
+//#include "MongooseHttpClient.h"
+//#include "task/event_log.h"
+#include "RS485/enmMeter.h"
 
 typedef enum {
     STATE_AUTHORIZE_UNKNOWN ,
@@ -77,13 +78,15 @@ private:
 //=Test function
     void    getOcppConfiguration();
     void    loadEvseBehavior();
-    void    initializeDiagnosticsService();
-    EventLog *eventLog;
-    bool diagSuccess = false, diagFailure = false;
-    MongooseHttpClient diagClient = MongooseHttpClient();
+    //void    initializeDiagnosticsService();
+    //EventLog *eventLog;
+    //bool diagSuccess = false, diagFailure = false;
+    //MongooseHttpClient diagClient = MongooseHttpClient();
+
+    //RS485IF MeterIF;//485读电表
 public:
     EMSECC(SECC_SPIClass *pCommIF);
-    EMSECC(SECC_SPIClass *pCommIF,EventLog &eventLog);
+    //EMSECC(SECC_SPIClass *pCommIF,EventLog &eventLog);
     EMSECC();
     ~EMSECC();
 

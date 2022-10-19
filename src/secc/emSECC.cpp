@@ -33,41 +33,17 @@ using ArduinoOcpp::Ocpp16::GetConfiguration;
 #include "secc/SECCtest.h"
 #include "ArduinoOcpp/SimpleOcppOperationFactory.h"
 #include "ArduinoOcpp/MessagesV16/DataTransfer.h"
-#include "task/event_log.h"
-#include "MongooseHttpClient.h"
+//#include "task/event_log.h"
+//#include "MongooseHttpClient.h"
 
+//RS485IF MeterIF(35,33);
+//long previousTime=0;
+//long interval=16000;
 EMSECC::EMSECC(SECC_SPIClass *pCommIF)
 {
   this->evIsLock = false;
   this->evIsPlugged = false;
   this->evRequestsEnergy = false;
-
-  this->seccFSM[SECC_State_Unknown] = &EMSECC::seccIdle;
-  this->seccFSM[SECC_State_Initialize] = &EMSECC::seccInitialize;
-  this->seccFSM[SECC_State_EvseLink] = &EMSECC::seccLinkEvse;
-  this->seccFSM[SECC_State_BootOcpp] = &EMSECC::seccBootOcpp;
-  this->seccFSM[SECC_State_Waitting] = &EMSECC::seccWaiting;
-  this->seccFSM[SECC_State_Preparing] = &EMSECC::seccPreCharge;
-  this->seccFSM[SECC_State_Charging] = &EMSECC::seccCharging;
-  this->seccFSM[SECC_State_Finance] = &EMSECC::seccFinance;
-  this->seccFSM[SECC_State_Finishing] = &EMSECC::seccStopCharge;
-
-  this->seccFSM[SECC_State_maintaining] = &EMSECC::seccMaintaince;
-  this->seccFSM[SECC_State_SuspendedEVSE] = &EMSECC::evseMalfunction;
-  this->seccFSM[SECC_State_SuspendedSECC] = &EMSECC::seccMalfunction;
-
-  esp_sync_sntp(sysTimeinfo, 5);
-
-  emEVSE = new EVSE_Interfacer(pCommIF);
-  setFsmState(SECC_State_Unknown, NULL);
-}
-
-EMSECC::EMSECC(SECC_SPIClass *pCommIF,EventLog &eventLog)
-{
-  this->evIsLock = false;
-  this->evIsPlugged = false;
-  this->evRequestsEnergy = false;
-  this->eventLog = &eventLog;
 
   this->seccFSM[SECC_State_Unknown] = &EMSECC::seccIdle;
   this->seccFSM[SECC_State_Initialize] = &EMSECC::seccInitialize;
@@ -139,6 +115,11 @@ void EMSECC::secc_loop()
   */
 
   //上一个状态检测到预定的事件后 ， 将状态变更到下一个状态
+ /* unsigned long currentTime=millis();
+	if(currentTime - previousTime > interval){
+  	previousTime=currentTime;
+    MeterIF.loop();
+  }*/
   SECC_State currentState = this->getFsmState();
   if (currentState != lastState)
   {
@@ -178,7 +159,7 @@ void EMSECC::seccInitialize(void *param)
   {
     ESP_LOGD(TAG_EMSECC, "seccInitialize %f", Tfun(paraA));
     loadEvseBehavior();
-    initializeDiagnosticsService();
+    //initializeDiagnosticsService();
     FirmwareService *firmwareService = getFirmwareService();
     firmwareService->setDownloadStatusSampler(this->proxyDownloadStatusSampler);
     //firmwareService->setOnDownload( this->proxyDownload );
@@ -1022,7 +1003,7 @@ void EMSECC::seccInitialize(void *param)
 
 
   }
-
+/*
   void EMSECC::initializeDiagnosticsService(){
       ArduinoOcpp::DiagnosticsService *diagService = getDiagnosticsService();
     if (diagService) {
@@ -1142,4 +1123,4 @@ void EMSECC::seccInitialize(void *param)
         });
     }
 
-  }
+  }*/

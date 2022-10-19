@@ -43,15 +43,15 @@ bool networkReady =  false;
 #include "SECC_SPI.hpp"
 #include "driver/spi_master.h"
 //HardwareSerial ESP_Uart1(1);
-
+/*
 #include "task/ocpp.h"
 #include "task/EVSEModel.h"
 #include "MongooseCore.h"
 #include "task/event_log.h"
 #include "DiagService.h"
-#include "task/root_ca.h"
+#include "task/root_ca.h"*/
 #include "LittleFS.h"
-//#include "SoftwareSerial.h"
+
 #include "RS485/enmMeter.h"
 
 #define TAG  "TAG:"
@@ -227,18 +227,18 @@ static void ocpp_config(){
 
 }
 
-dia *da; 
-EventLog eventLog;
-OcppTask ocppMD = OcppTask();
-EVSEModel *evse;
+//dia *da; 
+//EventLog eventLog;
+//OcppTask ocppMD = OcppTask();
+//EVSEModel *evse;
 EMSECC *emSecc ;
 RS485IF MeterIF(35,33);
 long previousTime=0;
 long interval=16000;
 void setup() {
     //pinMode(GPIO_NUM_0,PULLUP);
-    USE_FS.begin(true);
-    File eventFile = USE_FS.open("/eventlog","r");
+    //USE_FS.begin(true);
+    //File eventFile = USE_FS.open("/eventlog","r");
     pinMode(SPI_CS,OUTPUT);
     hw_init();
     log_setup();
@@ -265,11 +265,11 @@ void setup() {
     cellular_attach();
 #endif
 
-    eventLog.begin();
+    //eventLog.begin();
     //evse = new EVSEModel(hspi);
     //ocppMD.begin(evse,eventLog);
 
-    Mongoose.begin();
+    //Mongoose.begin();
     //Mongoose.setRootCa(root_ca);
     emSecc = new EMSECC(hspi);
     //da =new dia(eventLog);
@@ -310,16 +310,12 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  //da->begin();
   emSecc->secc_loop();
   OCPP_loop(); 
-  //Mongoose.poll(0);
-  //MicroTask.update();
-
-	unsigned long currentTime=millis();
+  unsigned long currentTime=millis();
 	if(currentTime - previousTime > interval){
   	previousTime=currentTime;
     MeterIF.loop();
   }
+
 }

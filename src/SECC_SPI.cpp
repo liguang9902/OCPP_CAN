@@ -128,7 +128,7 @@ TransferData SECC_SPIClass::SPItransfer( uint8_t *data,size_t length){
 void SECC_SPIClass::SPItransfer(uint8_t *data,uint8_t *rxdata,size_t length){
 
 
-    static const int spiClk = 4000000;
+    static const int spiClk = 400000;//有修改
 
     this->beginTransaction(SPISettings(spiClk, MSBFIRST, SPI_MODE0));
     digitalWrite(PIN_NUM_CS, LOW); //pull SS slow to prep other end for transfer

@@ -6,7 +6,7 @@
 #include "emChargePoint.hpp"
 
 #define METER_RESPONSE_SIZE_MAX	138
-#define METER_RESPONSD_TIMEOUT	5000
+#define METER_RESPONSD_TIMEOUT	4000
 #define METER_FRAME_BEGIN				0x7E
 #define METER_FRAME_END					0x7E
 
@@ -54,7 +54,7 @@ MTMeter mtMeter = {
 };
 */
 RS485IF::RS485IF(int8_t rxPin, int8_t txPin){
-	this->SFserial.begin(9600,SWSERIAL_8N1,rxPin,txPin,false,138);
+	SFserial.begin(9600,SWSERIAL_8N1,rxPin,txPin,false,138);
 	this->SFserial.setTimeout(METER_RESPONSD_TIMEOUT);
 }
 
@@ -200,16 +200,15 @@ int8_t RS485IF::getTotalActiveEnergy(uint32_t *pE){
 
 //int DE_RE=32;
 void RS485IF::meterUART_SendData(uint8_t *txbuffer, size_t length){
-	digitalWrite(32,HIGH); 
+	//digitalWrite(32,HIGH); 
     SFserial.write(txbuffer,length);
-    digitalWrite(32,LOW);
-	delay(800);
+    //digitalWrite(32,LOW);
+	delay(500);
 }
 
 size_t RS485IF::meterUart_receiveData(uint8_t *txbuffer, size_t length){
 	uint8_t rxbyte = 0;
-	
-	if(SFserial.available()) 
+	while(SFserial.available()) 
       {
         rxbyte =  SFserial.readBytes(txbuffer,length);
 		return rxbyte;
@@ -225,12 +224,13 @@ void RS485IF::loop(){
 	if(rxlen == SNRM_RESPONSE_SIZE)
 	{	//delay(500);
 		rxlen=meterHandshake();
-		if (rxlen == HANDSHAKE_RESPONSE_SIZE)
+		if(rxlen == HANDSHAKE_RESPONSE_SIZE)
 		{
 			//delay(500);
 			rxlen = meterRead();//等待时间很久
-							
+			//continue;				
 		}	
+		//continue;
 	}	
 	meterDisconn();
 }
