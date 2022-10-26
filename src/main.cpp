@@ -167,6 +167,7 @@ static void wifi_setup()
     }
 
     WiFi.begin(STASSID, STAPSK);
+    WiFi.setSleep(0);//关闭modem sleep模式（暂时）
 
     Serial.print(F("[main] Wait for Network...: "));
     while (!WiFi.isConnected())
@@ -234,7 +235,7 @@ static void ocpp_config(){
 EMSECC *emSecc ;
 RS485IF MeterIF(35,33);
 long previousTime=0;
-long interval=16000;
+long interval=15000;
 void setup() {
     //pinMode(GPIO_NUM_0,PULLUP);
     //USE_FS.begin(true);
@@ -312,10 +313,11 @@ void setup() {
 void loop() {
   emSecc->secc_loop();
   OCPP_loop(); 
+  /*
   unsigned long currentTime=millis();
 	if(currentTime - previousTime > interval){
   	previousTime=currentTime;
     MeterIF.loop();
   }
-
+*/
 }

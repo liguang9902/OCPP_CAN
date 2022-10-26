@@ -1,0 +1,31 @@
+#include "NewProtocol.h"
+
+const int newProtocolCommand[ProtocolCommand_MAX][1]=
+{
+    0x00232A1,
+    0x010A132,
+    0x12732A1,
+    0x131A132,
+    0x20032A1,
+    0x211A132,
+    0x32532A1,
+    0x330A132,
+    0x42432A1,
+    0x432A132,
+    0x52132A1,
+    0x530A132,
+    0x600A132,
+    0x61032A1,
+    0x702A132,
+    0x71032A1,
+    0x800A132,
+    0x81032A1,
+    0x900A132,
+    0x91032A1,
+    0xA00A132,
+    0xA1032A1,
+    0xB00A132,
+    0xB1032A1,
+    0xC07A132,
+    0xC1032A1,
+};

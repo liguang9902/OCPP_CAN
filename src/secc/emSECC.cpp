@@ -198,13 +198,13 @@ void EMSECC::seccInitialize(void *param)
       firmwareService->setOnInstall(this->proxyInstall);
 
       
-
+      /*
       auto operation = makeOcppOperation();
       auto msg = std::unique_ptr<OcppMessage>{nullptr};
       //DataTransfer dataT("CustomVendor");
       //dataT.createReq();
       msg = std::unique_ptr<OcppMessage>(new DataTransfer("CustomVendor"));
-      operation->setOcppMessage(std::move(msg));
+      operation->setOcppMessage(std::move(msg));*/
   }
   else
   {
@@ -969,7 +969,7 @@ void EMSECC::seccInitialize(void *param)
         if(getTransactionId()<0){
           this->authStatus.rfidTag.clear();
           this->authStatus.rfidTag.concat(idtag);
-
+          //向LPC发送远程启动指令
           setFsmState(SECC_State_Preparing, NULL);
           remoteTranscation = true;
         }
@@ -978,6 +978,7 @@ void EMSECC::seccInitialize(void *param)
 
       setOnRemoteStopTransactionSendConf([this](JsonObject payload){
         if(getTransactionId()>0){
+          //向LPC发送远程停止指令
           setFsmState(SECC_State_Finishing, NULL);
         }
 

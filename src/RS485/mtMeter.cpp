@@ -200,9 +200,9 @@ int8_t RS485IF::getTotalActiveEnergy(uint32_t *pE){
 
 //int DE_RE=32;
 void RS485IF::meterUART_SendData(uint8_t *txbuffer, size_t length){
-	//digitalWrite(32,HIGH); 
+	digitalWrite(32,HIGH); 
     SFserial.write(txbuffer,length);
-    //digitalWrite(32,LOW);
+    digitalWrite(32,LOW);
 	delay(500);
 }
 
