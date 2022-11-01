@@ -42,6 +42,7 @@ bool networkReady =  false;
 #include "Common.hpp"
 #include "SECC_SPI.hpp"
 #include "driver/spi_master.h"
+#include "can/SECCCan.h"
 //HardwareSerial ESP_Uart1(1);
 /*
 #include "task/ocpp.h"
@@ -61,7 +62,7 @@ bool networkReady =  false;
 #define SPI_CS 15
 //static const int spiClk = 20000000;
 SECC_SPIClass * hspi = new SECC_SPIClass(HSPI);
-
+EVSEModelCan Canmodel;
 //SoftwareSerial IECinterface(35, 33);
 int DE_RE=32;
 static void hw_init()
@@ -313,6 +314,7 @@ void setup() {
 void loop() {
   emSecc->secc_loop();
   OCPP_loop(); 
+  Canmodel.loop();
   /*
   unsigned long currentTime=millis();
 	if(currentTime - previousTime > interval){
