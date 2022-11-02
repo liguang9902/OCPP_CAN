@@ -6,6 +6,10 @@
 #include <WString.h>
 #include <map>
 //#include "ProtocolEVSE.hpp"
+#include <ArduinoJson.h>
+#include "Common.hpp"
+#include "core/NewOCPP.h"
+
 
 #define frameID 0x0010000
 typedef enum
@@ -49,6 +53,7 @@ typedef enum{
     AS_Expired,        //标识符已过期
     AS_Invalid         //标识符无效的
 }AuthorizeStatus;
+extern std::map<AuthorizeStatus , String> protocolAuthorizeStatus;
 
 typedef enum{
     AC,
@@ -91,7 +96,7 @@ typedef enum{
     Unavailable,	
     Faulted 
 }EVSEStatus;
-
+extern std::map<EVSEStatus , String> protocolEVSEStatus;
 
 typedef enum{
     Local,
@@ -153,6 +158,7 @@ typedef enum{
     Hard,
     Soft
 }ResetType;
+extern std::map<ResetType , String> protocolResetType;
 
 #pragma pack(push) 
 #pragma pack(1) 
@@ -339,7 +345,11 @@ typedef struct
 //void Canpacket_ProtocolRequest(T& payload ,  CanPacket& packet);
 
 template<typename T>
+void Canpacket_ProtocolSend(T& payload ,JsonObject confMsg);
+
+template<typename T>
 void Canpacket_ProtocolSend(T& payload );
+
 
 template<typename T>
 void Canunpacket_ProtocolRes(T& payload );

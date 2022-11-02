@@ -1,6 +1,8 @@
 #include "NewProtocol.h"
 #include "CAN.h"
+#include "SECCCan.h"
 
+using namespace ArduinoOcpp ;
 
 #define cID 99
 const uint32_t newProtocolCommand[ProtocolCommand_MAX][1]=
@@ -105,6 +107,30 @@ std::map<UnlockConnectorStatus , String> protocolUnlockConnectorStatus{
     {NotSupported,"NotSupported"}
 };
 
+std::map<AuthorizeStatus , String> protocolAuthorizeStatus{
+    {AS_Accepted,"Accepted"},       
+    {AS_Blocked,"Blocked"},        
+    {AS_ConcurrentTx,"ConcurrentTx"},  
+    {AS_Expired,"Expired"},        
+    {AS_Invalid,"Invalid"} 
+};
+
+std::map<EVSEStatus , String> protocolEVSEStatus{
+    {Available,"Available"},
+    {Preparing,"Preparing"},
+    {Charging,"Charging"},
+    {SuspendedEV,"SuspendedEV"},
+    {SuspendedEVSE,"SuspendedEVSE"},
+    {Finishing,"Finishing"}, 	
+    {Reserved,"Reserved"}, 		
+    {Unavailable,"Unavailable"},	
+    {Faulted,"Faulted"}
+};
+
+std::map<ResetType , String> protocolResetType{
+    {Hard,"Hard"},
+    {Soft,"Soft"}
+};
 String ID = "12345678901234567890";
 tm TestTime ;
 /*
@@ -142,10 +168,10 @@ void Canpacket_ProtocolSend<Payload_AuthorizeReq>(Payload_AuthorizeReq& payload)
 }
 */
 template<>
-void Canpacket_ProtocolSend<Payload_AuthorizeRes>(Payload_AuthorizeRes& payload){
-    payload.Authorizestatus = AS_Blocked;
-    AuthorizeStatus AS = (AuthorizeStatus) 1;//用于枚举类型的解码
+void Canpacket_ProtocolSend<Payload_AuthorizeRes>(Payload_AuthorizeRes& payload,JsonObject confMsg){
+    //payload.Authorizestatus = AS_Blocked;
 
+    payload.Authorizestatus = protocolAuthorizeStatus.find(confMsg["idTagInfo"]["status"])->first;
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
     CAN.beginExtendedPacket(CanID, 8);
     CAN.write(payload.Authorizestatus);
@@ -154,18 +180,23 @@ void Canpacket_ProtocolSend<Payload_AuthorizeRes>(Payload_AuthorizeRes& payload)
 }
 
 template<>
-void Canpacket_ProtocolSend<Payload_BootCnf>(Payload_BootCnf& payload){
-    TestTime.tm_year = 2022;
+void Canpacket_ProtocolSend<Payload_BootCnf>(Payload_BootCnf& payload,JsonObject confMsg){
+    /*TestTime.tm_year = 2022;
     TestTime.tm_mon  = 8 ;
     TestTime.tm_mday = 29;
     TestTime.tm_hour = 10;
     TestTime.tm_min  = 50;
-    TestTime.tm_sec  = 32;
+    TestTime.tm_sec  = 32;*/
+    //const char *currentTime = confMsg["currentTime"] | "Invalid";
+    //validateOcppTime(currentTime , payload.currentTime);
+    
+    esp_get_systime(payload.currentTime);
 
-    payload.currentTime = TestTime;
+    //payload.currentTime = TestTime;
     payload.HeartBeatInterval = 10;
     payload.MeterValueInterval = 10;
-    payload.BootStatus = Accepted;
+    //payload.BootStatus = Accepted;
+    payload.BootStatus = protocolCommonStatus.find(confMsg["status"])->first;//还未测试
 
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
     CAN.beginExtendedPacket(CanID, 8);
@@ -188,15 +219,19 @@ void Canpacket_ProtocolSend<Payload_BootCnf>(Payload_BootCnf& payload){
 
 template<>
 void Canpacket_ProtocolSend<Payload_HeartbeatRes>(Payload_HeartbeatRes& payload){
-    TestTime.tm_year = 2022;
+   /* TestTime.tm_year = 2022;
     TestTime.tm_mon  = 8 ;
     TestTime.tm_mday = 29;
     TestTime.tm_hour = 10;
     TestTime.tm_min  = 50;
-    TestTime.tm_sec  = 32;
-
-    payload.currentTime = TestTime;
-    payload.statusEVSE = Preparing; //用map构造键值对<string,eunm>来判断
+    TestTime.tm_sec  = 32;*/
+    //const char *currentTime = confMsg["currentTime"] | "Invalid";
+    //validateOcppTime(currentTime , payload.currentTime);
+    //payload.currentTime = TestTime;
+    esp_get_systime(payload.currentTime);
+    ArduinoOcpp::ChargePointStatusService *CPSS = getChargePointStatusService();
+    auto connectorStatus= CPSS->getConnector(Canmodel.getHeartbeatCID());
+    payload.statusEVSE = (EVSEStatus)connectorStatus->inferenceStatus(); //?
 
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
     CAN.beginExtendedPacket(CanID, 8);
@@ -243,7 +278,7 @@ void Canpacket_ProtocolSend<Payload_ErrorCnf>(Payload_ErrorCnf& payload){
 }
 
 template<>
-void Canpacket_ProtocolSend<Payload_ChangeAvailabilityReq>(Payload_ChangeAvailabilityReq& payload){
+void Canpacket_ProtocolSend<Payload_ChangeAvailabilityReq>(Payload_ChangeAvailabilityReq& payload,JsonObject confMsg){
     payload.connectorID = cID;
     payload.CAReqstatus = CAS_Accepted;
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
@@ -254,7 +289,7 @@ void Canpacket_ProtocolSend<Payload_ChangeAvailabilityReq>(Payload_ChangeAvailab
 }  
 
 template<>
-void Canpacket_ProtocolSend<Payload_RemoteStartReq>(Payload_RemoteStartReq& payload){
+void Canpacket_ProtocolSend<Payload_RemoteStartReq>(Payload_RemoteStartReq& payload,JsonObject confMsg){
     payload.connectorID = cID;
     strcpy(payload.Idtag,ID.c_str());
 
@@ -286,7 +321,7 @@ void Canpacket_ProtocolSend<Payload_RemoteStartReq>(Payload_RemoteStartReq& payl
 }
 
 template<>
-void Canpacket_ProtocolSend<Payload_RemoteStopReq>(Payload_RemoteStopReq& payload){
+void Canpacket_ProtocolSend<Payload_RemoteStopReq>(Payload_RemoteStopReq& payload,JsonObject confMsg){
     payload.connectorID = cID;
 
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
@@ -296,7 +331,7 @@ void Canpacket_ProtocolSend<Payload_RemoteStopReq>(Payload_RemoteStopReq& payloa
 }
 
 template<>
-void Canpacket_ProtocolSend<Payload_ResetReq>(Payload_ResetReq& payload){
+void Canpacket_ProtocolSend<Payload_ResetReq>(Payload_ResetReq& payload,JsonObject confMsg){
     payload.type = Hard;
 
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
@@ -306,7 +341,7 @@ void Canpacket_ProtocolSend<Payload_ResetReq>(Payload_ResetReq& payload){
 }
 
 template<>
-void Canpacket_ProtocolSend<Payload_UnlockConnectorReq>(Payload_UnlockConnectorReq& payload){
+void Canpacket_ProtocolSend<Payload_UnlockConnectorReq>(Payload_UnlockConnectorReq& payload,JsonObject confMsg){
     payload.connectorID = cID;
 
     uint32_t CanID = *newProtocolCommand[payload.CmdID];

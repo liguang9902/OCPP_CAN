@@ -288,11 +288,15 @@ void EMSECC::seccInitialize(void *param)
     //float paraA = 1.00;
     if (!loopCount)
     {
-
-      uint64_t mac = ESP.getEfuseMac();
-      String cpSerialNum = String((unsigned long)mac , 16);
-      String cpModel = String(CP_Model);
-      String cpVendor = String(CP_Vendor);    
+      Payload_BootNtf bOOT;
+      if(Canmodel.CanPacketSave[*(newProtocolCommand[bOOT.CmdID])]){
+      //uint64_t mac = ESP.getEfuseMac();
+      //String cpSerialNum = String((unsigned long)mac , 16);
+      //String cpModel = String(CP_Model);
+      String cpModel = Canmodel.getchargePointModel();
+      String cpSerialNum = Canmodel.getchargePointSerialNumber();
+      String cpVendor = Canmodel.getchargePointVendor();
+      //String cpVendor = String(CP_Vendor);    
       String csUrl =  String(OCPP_URL)+cpVendor+'_'+cpModel+'_'+cpSerialNum ;
       String fwVersion = String(FWVersion);
       String cbSerialNum = String(CBSerialNum);
@@ -304,12 +308,14 @@ void EMSECC::seccInitialize(void *param)
                         [this](JsonObject confMsg)
                        {
                          //This callback is executed when the .conf() response from the central system arrives
+                         
                          ESP_LOGD(TAG_EMSECC, "BootNotification was answered. Central System clock: %s", confMsg["currentTime"].as<const char *>()); //as<string>()乱码
                          this->evseIsBooted = true;
                          //esp_set_OcppTime(confMsg["currentTime"].as<const char *>());
                        });
       loopCount++;
       ESP_LOGI(TAG_EMSECC, "ready. Wait for BootNotification.conf(), then start\n");
+      }
     }
 
     if (!evseIsBooted)

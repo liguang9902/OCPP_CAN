@@ -62,7 +62,7 @@ bool networkReady =  false;
 #define SPI_CS 15
 //static const int spiClk = 20000000;
 SECC_SPIClass * hspi = new SECC_SPIClass(HSPI);
-EVSEModelCan Canmodel;
+//EVSEModelCan Canmodel;
 //SoftwareSerial IECinterface(35, 33);
 int DE_RE=32;
 static void hw_init()

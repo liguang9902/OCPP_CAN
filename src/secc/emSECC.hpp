@@ -17,6 +17,8 @@
 //#include "MongooseHttpClient.h"
 //#include "task/event_log.h"
 #include "RS485/enmMeter.h"
+#include "can/SECCCan.h"
+#include "can/NewProtocol.h"
 
 typedef enum {
     STATE_AUTHORIZE_UNKNOWN ,

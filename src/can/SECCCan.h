@@ -28,7 +28,7 @@ private:
     float L3Voltage; float L3Current; float L3Power;
 
     float MeterStop;
-    tm ycurrentTime;
+    //tm currentTime;
     tm MeterValueTimestamp;tm StopChargingTimestamp;tm ErrorTimestamp;
     String Authorizeidtag;String StopChargingidtag;
     int AuthorizeCID;int HeartbeatCID;int MeterValueCID;int StopChargingCID;int ErrorCID;
@@ -40,7 +40,6 @@ private:
     String RemoteStopStatus;
     String ResetStatus;
     String UnlockconnectorStatus;
-    std::map<uint32_t,String> CanPacketSave;
 
     Payload_AuthorizeReq  AuthorizeReq;
     Payload_BootNtf BootNtf;
@@ -73,13 +72,7 @@ public:
     
     void loop();
 
-    void Command_Boot();  
-    void Command_Heartbeat();
-    void Command_MeterValue();
-    void Command_Authorize();
-    void Command_StopCharing();
-    void Command_Error();
-
+    std::map<uint32_t,String> CanPacketSave;
     String getchargePointModel();
     int getconnectorNum();
     String getchargePointSerialNumber();
@@ -90,14 +83,27 @@ public:
     String getCPstatus();
     String getlockstutus();
 
-    int getL1Voltage(); int getL1current(); int getL1Power();
-    int getL2Voltage(); int getL2current(); int getL2Power();
-    int getL3Voltage(); int getL3current(); int getL3Power();
+    float getL1Voltage(); float getL1current(); float getL1Power();
+    float getL2Voltage(); float getL2current(); float getL2Power();
+    float getL3Voltage(); float getL3current(); float getL3Power();
 
     String getidtag();
     int getUsingconnecterID();
     String getErrorCode();
+    float getMeterStop();
+    
+    tm getMeterValueTimestamp();tm getStopChargingTimestamp();tm getErrorTimestamp();
+    String getAuthorizeidtag();String getStopChargingidtag();
+    int getAuthorizeCID();int getHeartbeatCID();int getMeterValueCID();int getStopChargingCID();int getErrorCID();
+    
+    String getStopReason();
+
+    String getChangeAvailabilityStatus();
+    String getRemoteStartStatus();
+    String getRemoteStopStatus();
+    String getResetStatus();
+    String getUnlockconnectorStatus();
 };
 
-
+extern EVSEModelCan  Canmodel;
 #endif

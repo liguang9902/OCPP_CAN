@@ -458,3 +458,145 @@ void EVSEModelCan::CanProtocol_UnlockConnectorRes(Payload_UnlockConnectorRes& pa
     UnlockconnectorStatus = protocolUnlockConnectorStatus[(UnlockConnectorStatus)payload.StatusUnlockConnector];
     //Serial.println(UnlockconnectorStatus);
 }
+
+String EVSEModelCan::getchargePointModel(){
+    return chargePointModel;
+}
+
+int EVSEModelCan::getconnectorNum(){
+    return connectorNum;
+}
+
+String EVSEModelCan::getchargePointSerialNumber(){
+    return chargePointSerialNumber;
+}
+
+String EVSEModelCan::getchargePointVendor(){
+    return chargePointVendor;
+}
+
+String EVSEModelCan::getfirmwareVersion(){
+    return firmwareVersion;
+}  
+
+String EVSEModelCan::getCablestatus(){
+    return Cablestatus;
+}
+
+String EVSEModelCan::getCPstatus(){
+    return CPstatus;
+}
+
+String EVSEModelCan::getlockstutus(){
+    return lockstutus;
+}
+
+float EVSEModelCan::getL1Voltage(){
+    return L1Voltage;
+} 
+
+float EVSEModelCan::getL1current(){
+    return L1Current;
+} 
+
+float EVSEModelCan::getL1Power(){
+    return L1Power;
+}
+
+float EVSEModelCan::getL2Voltage(){
+    return L2Voltage;
+} 
+
+float EVSEModelCan::getL2current(){
+    return L2Current;
+} 
+
+float EVSEModelCan::getL2Power(){
+    return L2Power;
+}
+
+float EVSEModelCan::getL3Voltage(){
+    return L3Voltage;
+} 
+
+float EVSEModelCan::getL3current(){
+    return L3Current;
+} 
+
+float EVSEModelCan::getL3Power(){
+    return L3Power;
+}
+
+String EVSEModelCan::getErrorCode(){
+    return ErrorCode;
+}
+
+float EVSEModelCan::getMeterStop(){
+    return MeterStop;
+}
+    
+tm EVSEModelCan::getMeterValueTimestamp(){
+    return MeterValueTimestamp;    
+}
+
+tm EVSEModelCan::getStopChargingTimestamp(){
+    return StopChargingTimestamp;
+}
+
+tm EVSEModelCan::getErrorTimestamp(){
+    return ErrorTimestamp;
+}
+
+String EVSEModelCan::getAuthorizeidtag(){
+    return Authorizeidtag;
+}
+
+String EVSEModelCan::getStopChargingidtag(){
+    return StopChargingidtag;
+}
+
+int EVSEModelCan::getAuthorizeCID(){
+    return AuthorizeCID;
+}
+
+int EVSEModelCan::getHeartbeatCID(){
+    return HeartbeatCID;
+}
+
+int EVSEModelCan::getMeterValueCID(){
+    return MeterValueCID;
+}
+
+int EVSEModelCan::getStopChargingCID(){
+    return StopChargingCID;
+}
+
+int EVSEModelCan::getErrorCID(){
+    return ErrorCID;
+}
+    
+String EVSEModelCan::getStopReason(){
+    return StopReason;
+}
+
+String EVSEModelCan::getChangeAvailabilityStatus(){
+    return ChangeAvailabilityStatus;
+}
+
+String EVSEModelCan::getRemoteStartStatus(){
+    return RemoteStartStatus;
+}
+
+String EVSEModelCan::getRemoteStopStatus(){
+    return RemoteStopStatus;
+}
+    
+String EVSEModelCan::getResetStatus(){
+    return ResetStatus;
+}
+
+String EVSEModelCan::getUnlockconnectorStatus(){
+    return UnlockconnectorStatus;
+}
+
+EVSEModelCan  Canmodel;
