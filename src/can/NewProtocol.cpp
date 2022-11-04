@@ -16,11 +16,11 @@ const uint32_t newProtocolCommand[ProtocolCommand_MAX][1]=
     0x32532A1,
     0x330A132,
     0x42432A1,
-    0x432A132,
+    0x430A132,
     0x52132A1,
     0x530A132,
-    0x600A132,
-    0x61032A1,
+    0x620A132,
+    0x63032A1,
     0x702A132,
     0x71032A1,
     0x800A132,
@@ -87,13 +87,14 @@ std::map<ErrorReason , String> protocolErrorReason{
     {PowerSwitchFailure,"PowerSwitchFailure"},
     {ReaderFailure,"ReaderFailure"},
     {UnderVoltage,"UnderVoltage"},
-    {WeakSignal,"WeakSignal"}
+    {WeakSignal,"WeakSignal"},
+    {NoError,"NoError"}
 };
 
-std::map<ChangeAvailabilityResStatus , String> protocolChangeAvailabilityResStatus{
-    {CAS_Accepted,"Accepted"},
-    {CAS_Rejectedcked,"Rejectedcked"},
-    {CAS_Scheduled,"Scheduled"}
+std::map<ChangeAvailabilityCnfStatus , String> protocolChangeAvailabilityCnfStatus{
+    {CA_Accepted,"Accepted"},
+    {CA_Rejectedcked,"Rejected"}
+    //{CAS_Scheduled,"Scheduled"}
 };
 
 std::map<CommonStatus , String> protocolCommonStatus{
@@ -133,6 +134,9 @@ std::map<ResetType , String> protocolResetType{
 };
 String ID = "12345678901234567890";
 tm TestTime ;
+
+#define NumConnectors 2
+uint8_t SavedAvailablityStatus[NumConnectors] = {0,};
 /*
 template<>
 void Canpacket_ProtocolSend<Payload_AuthorizeReq>(Payload_AuthorizeReq& payload){
@@ -167,6 +171,9 @@ void Canpacket_ProtocolSend<Payload_AuthorizeReq>(Payload_AuthorizeReq& payload)
     CAN.endPacket();
 }
 */
+
+
+
 template<>
 void Canpacket_ProtocolSend<Payload_AuthorizeRes>(Payload_AuthorizeRes& payload,JsonObject confMsg){
     //payload.Authorizestatus = AS_Blocked;
@@ -229,8 +236,8 @@ void Canpacket_ProtocolSend<Payload_HeartbeatRes>(Payload_HeartbeatRes& payload)
     //validateOcppTime(currentTime , payload.currentTime);
     //payload.currentTime = TestTime;
     esp_get_systime(payload.currentTime);
-    ArduinoOcpp::ChargePointStatusService *CPSS = getChargePointStatusService();
-    auto connectorStatus= CPSS->getConnector(Canmodel.getHeartbeatCID());
+    ArduinoOcpp::ChargePointStatusService *CPSService = getChargePointStatusService();
+    auto connectorStatus= CPSService->getConnector(Canmodel.getHeartbeatCID());
     payload.statusEVSE = (EVSEStatus)connectorStatus->inferenceStatus(); //?
 
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
@@ -277,21 +284,38 @@ void Canpacket_ProtocolSend<Payload_ErrorCnf>(Payload_ErrorCnf& payload){
     CAN.endPacket();
 }
 
+void initialiSavedAvailablityStatus(){
+    ArduinoOcpp::ChargePointStatusService *CPSService = getChargePointStatusService();
+   
+    for (int i = 0; i < CPSService->getNumConnectors(); i++) {
+    SavedAvailablityStatus[i] = CPSService->getConnector(i)->getAvailability();
+    }
+}
+
 template<>
-void Canpacket_ProtocolSend<Payload_ChangeAvailabilityReq>(Payload_ChangeAvailabilityReq& payload,JsonObject confMsg){
-    payload.connectorID = cID;
-    payload.CAReqstatus = CAS_Accepted;
-    uint32_t CanID = *newProtocolCommand[payload.CmdID];
-    CAN.beginExtendedPacket(CanID, 8);
-    CAN.write(payload.connectorID);
-    CAN.write(payload.CAReqstatus);
-    CAN.endPacket();
+void Canpacket_ProtocolSend<Payload_ChangeAvailabilityNtf>(Payload_ChangeAvailabilityNtf& payload){
+    ArduinoOcpp::ChargePointStatusService *CPSService = getChargePointStatusService();
+
+    for (int i = 0; i < CPSService->getNumConnectors(); i++) {
+        //if(CPSService->getConnector(i)->getAvailability()!=SavedAvailablityStatus[i]){
+        payload.connectorID = i;
+        payload.CAReqstatus = (ChangeAvailabilityNtfStatus)CPSService->getConnector(i)->getAvailability();//
+
+        uint32_t CanID = *newProtocolCommand[payload.CmdID];
+        CAN.beginExtendedPacket(CanID, 8);
+        CAN.write(payload.connectorID);
+        CAN.write(payload.CAReqstatus);
+        CAN.endPacket();
+        //}
+    }
 }  
 
 template<>
 void Canpacket_ProtocolSend<Payload_RemoteStartReq>(Payload_RemoteStartReq& payload,JsonObject confMsg){
-    payload.connectorID = cID;
-    strcpy(payload.Idtag,ID.c_str());
+    //payload.connectorID = cID;
+    //strcpy(payload.Idtag,ID.c_str());
+    payload.connectorID = confMsg["connectorId"] | -1;
+    strcpy(payload.Idtag,confMsg["idTag"] | "INVALID");
 
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
     CAN.beginExtendedPacket(CanID, 8);
@@ -322,7 +346,8 @@ void Canpacket_ProtocolSend<Payload_RemoteStartReq>(Payload_RemoteStartReq& payl
 
 template<>
 void Canpacket_ProtocolSend<Payload_RemoteStopReq>(Payload_RemoteStopReq& payload,JsonObject confMsg){
-    payload.connectorID = cID;
+    //payload.connectorID = cID;
+    payload.connectorID = confMsg["connectorId"] | -1;
 
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
     CAN.beginExtendedPacket(CanID, 8);
@@ -332,7 +357,8 @@ void Canpacket_ProtocolSend<Payload_RemoteStopReq>(Payload_RemoteStopReq& payloa
 
 template<>
 void Canpacket_ProtocolSend<Payload_ResetReq>(Payload_ResetReq& payload,JsonObject confMsg){
-    payload.type = Hard;
+    //payload.type = Hard;
+    payload.type = confMsg["type"];
 
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
     CAN.beginExtendedPacket(CanID, 8);
@@ -340,10 +366,12 @@ void Canpacket_ProtocolSend<Payload_ResetReq>(Payload_ResetReq& payload,JsonObje
     CAN.endPacket();
 }
 
+#define ID_OF_CONNECTOR 1
 template<>
-void Canpacket_ProtocolSend<Payload_UnlockConnectorReq>(Payload_UnlockConnectorReq& payload,JsonObject confMsg){
-    payload.connectorID = cID;
-
+void Canpacket_ProtocolSend<Payload_UnlockConnectorReq>(Payload_UnlockConnectorReq& payload){
+    //payload.connectorID = cID;
+    //payload.connectorID = confMsg["connectorId"] | -1;
+    payload.connectorID = ID_OF_CONNECTOR;
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
     CAN.beginExtendedPacket(CanID, 8);
     CAN.write(payload.connectorID);

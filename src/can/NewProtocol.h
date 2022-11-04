@@ -10,6 +10,7 @@
 #include "Common.hpp"
 #include "core/NewOCPP.h"
 
+using namespace ArduinoOcpp ;
 
 #define frameID 0x0010000
 typedef enum
@@ -26,8 +27,8 @@ typedef enum
     ProtocolCommand_StopChargingCnf,            //StopCharging.cnf: OCPP-CM回复确认信息，报文为idTag或为空。
     ProtocolCommand_ErrorNtf,                   //Error.ntf: 当EVSE出现故障时，需立刻向OCPP-CM发起通知，必要时同时进入停止充电流程。
     ProtocolCommand_ErrorCnf,                   //Error.cnf: OCPP-CM回复确认信息，报文为空。
-    ProtocolCommand_ChangeAvailabilityReq,      //ChangeAvailability.req: OCPP-CM请求EVSE更改当前的可用状态。
-    ProtocolCommand_ChangeAvailabilityRes,      //ChangeAvailability.res: EVSE回复是否接受状态改变。
+    ProtocolCommand_ChangeAvailabilityNtf,      //ChangeAvailability.req: OCPP-CM请求EVSE更改当前的可用状态。
+    ProtocolCommand_ChangeAvailabilityCnf,      //ChangeAvailability.res: EVSE回复是否接受状态改变。
     ProtocolCommand_RemoteStartReq,             //RemoteStart.req: OCPP-CM远程请求EVSE开始充电。
     ProtocolCommand_RemoteStartRes,             //RemoteStart.res: EVSE回复是否接受开始充电请求。
     ProtocolCommand_RemoteStopReq,              //RemoteStop.req: OCPP-CM远程请求EVSE停止充电。
@@ -125,21 +126,25 @@ typedef enum{
     PowerSwitchFailure,
     ReaderFailure, 		
     UnderVoltage, 
-    WeakSignal
+    WeakSignal,
+    NoError = 15
 }ErrorReason;
 extern std::map<ErrorReason , String> protocolErrorReason;
 
 typedef enum{
-    Inoperative,
-    operative
-}ChangeAvailabilityReqStatus;
+    //Inoperative,
+    //operative
+    INOPERATIVE,
+    INOPERATIVE_SCHEDULED,
+    OPERATIVE
+}ChangeAvailabilityNtfStatus;
 
 typedef enum{
-    CAS_Accepted,
-    CAS_Rejectedcked,
-    CAS_Scheduled
-}ChangeAvailabilityResStatus;
-extern std::map<ChangeAvailabilityResStatus , String> protocolChangeAvailabilityResStatus;
+    CA_Accepted,
+    CA_Rejectedcked
+    //CAS_Scheduled
+}ChangeAvailabilityCnfStatus;
+extern std::map<ChangeAvailabilityCnfStatus , String> protocolChangeAvailabilityCnfStatus;
 
 typedef enum{
     Accepted,
@@ -255,7 +260,7 @@ struct Payload_ErrorNtf
     ProtocolCommand CmdID = ProtocolCommand_ErrorNtf;
     tm Timestamp;
     uint8_t connectorID;
-    uint8_t ReasonError;
+    uint8_t ReasonError = NoError;
 };
 
 struct Payload_ErrorCnf
@@ -263,16 +268,16 @@ struct Payload_ErrorCnf
     ProtocolCommand CmdID = ProtocolCommand_ErrorCnf;
 };
 
-struct Payload_ChangeAvailabilityReq
+struct Payload_ChangeAvailabilityNtf
 {
-    ProtocolCommand CmdID = ProtocolCommand_ChangeAvailabilityReq;
+    ProtocolCommand CmdID = ProtocolCommand_ChangeAvailabilityNtf;
     uint8_t connectorID;
     uint8_t CAReqstatus;
 };
 
-struct Payload_ChangeAvailabilityRes
+struct Payload_ChangeAvailabilityCnf
 {
-    ProtocolCommand CmdID = ProtocolCommand_ChangeAvailabilityRes;
+    ProtocolCommand CmdID = ProtocolCommand_ChangeAvailabilityCnf;
     uint8_t CAResstatus;
 };
 
@@ -353,5 +358,7 @@ void Canpacket_ProtocolSend(T& payload );
 
 template<typename T>
 void Canunpacket_ProtocolRes(T& payload );
+
+void initialiSavedAvailablityStatus();
 
 #endif

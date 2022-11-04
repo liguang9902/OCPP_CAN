@@ -15,9 +15,9 @@ private:
 
     String chargePointModel;
     int connectorNum;
-    String chargePointSerialNumber;
-    String chargePointVendor;
-    String firmwareVersion;  
+    String chargePointSerialNumber = "Invalid";
+    String chargePointVendor = "Invalid";
+    String firmwareVersion = "Invalid";  
 
     String Cablestatus;
     String CPstatus;
@@ -35,11 +35,11 @@ private:
     String ErrorCode = "NoError";
     String StopReason;
 
-    String ChangeAvailabilityStatus;
-    String RemoteStartStatus;
-    String RemoteStopStatus;
-    String ResetStatus;
-    String UnlockconnectorStatus;
+    String ChangeAvailabilityStatus = "Invalid";
+    String RemoteStartStatus = "Invalid";
+    String RemoteStopStatus = "Invalid";
+    String ResetStatus = "Invalid";
+    String UnlockconnectorStatus = "Invalid";
 
     Payload_AuthorizeReq  AuthorizeReq;
     Payload_BootNtf BootNtf;
@@ -47,12 +47,14 @@ private:
     Payload_MeterValueNtf MeterValueNtf;
     Payload_StopChargingNtf StopChargingNtf;
     Payload_ErrorNtf ErrorNtf;
-    Payload_ChangeAvailabilityRes ChangeAvailabilityRes;
+    Payload_ChangeAvailabilityCnf ChangeAvailabilityCnf;
     Payload_RemoteStartRes RemoteStartRes;
     Payload_RemoteStopRes RemoteStopRes;
     Payload_ResetRes ResetRes;
     Payload_UnlockConnectorRes UnlockConnectorRes;
- 
+    Payload_ChangeAvailabilityNtf ChangeAvailabilityNtf;
+
+    
     //template<typename T>
     void CanProtocol_AuthorizeReq(Payload_AuthorizeReq& payload );  
     void CanProtocol_BootNtf(Payload_BootNtf& payload);
@@ -60,11 +62,12 @@ private:
     void CanProtocol_MeterValueNtf(Payload_MeterValueNtf& payload);
     void CanProtocol_StopChargingNtf(Payload_StopChargingNtf& payload);
     void CanProtocol_ErrorNtf(Payload_ErrorNtf& payload);
-    void CanProtocol_ChangeAvailabilityRes(Payload_ChangeAvailabilityRes& payload);
+    void CanProtocol_ChangeAvailabilityCnf(Payload_ChangeAvailabilityCnf& payload);
     void CanProtocol_RemoteStartRes(Payload_RemoteStartRes& payload);
     void CanProtocol_RemoteStopRes(Payload_RemoteStopRes& payload);
     void CanProtocol_ResetRes(Payload_ResetRes& payload);
     void CanProtocol_UnlockConnectorRes(Payload_UnlockConnectorRes& payload);
+    //void CanProtocol_ChangeAvailabilityNtf(Payload_ChangeAvailabilityNtf& payload);
 public:
     //EVSEModel(SECC_SPIClass *pCommIF);
     EVSEModelCan();
@@ -72,6 +75,8 @@ public:
     
     void loop();
 
+    bool authorizeFlag = false;
+    bool BootFlag = false;
     std::map<uint32_t,String> CanPacketSave;
     String getchargePointModel();
     int getconnectorNum();

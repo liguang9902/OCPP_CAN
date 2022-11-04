@@ -115,11 +115,6 @@ void EMSECC::secc_loop()
   */
 
   //上一个状态检测到预定的事件后 ， 将状态变更到下一个状态
- /* unsigned long currentTime=millis();
-	if(currentTime - previousTime > interval){
-  	previousTime=currentTime;
-    MeterIF.loop();
-  }*/
   SECC_State currentState = this->getFsmState();
   if (currentState != lastState)
   {
@@ -289,14 +284,15 @@ void EMSECC::seccInitialize(void *param)
     if (!loopCount)
     {
       Payload_BootNtf bOOT;
-      if(Canmodel.CanPacketSave[*(newProtocolCommand[bOOT.CmdID])]){
-      //uint64_t mac = ESP.getEfuseMac();
-      //String cpSerialNum = String((unsigned long)mac , 16);
-      //String cpModel = String(CP_Model);
-      String cpModel = Canmodel.getchargePointModel();
-      String cpSerialNum = Canmodel.getchargePointSerialNumber();
-      String cpVendor = Canmodel.getchargePointVendor();
-      //String cpVendor = String(CP_Vendor);    
+      //if(Canmodel.CanPacketSave[*(newProtocolCommand[bOOT.CmdID])]!=NULL){
+       // if(Canmodel.BootFlag == true){
+      uint64_t mac = ESP.getEfuseMac();
+      String cpSerialNum = String((unsigned long)mac , 16);
+      String cpModel = String(CP_Model);
+      //String cpModel = Canmodel.getchargePointModel();
+      //String cpSerialNum = Canmodel.getchargePointSerialNumber();
+      //String cpVendor = Canmodel.getchargePointVendor();
+      String cpVendor = String(CP_Vendor);    
       String csUrl =  String(OCPP_URL)+cpVendor+'_'+cpModel+'_'+cpSerialNum ;
       String fwVersion = String(FWVersion);
       String cbSerialNum = String(CBSerialNum);
@@ -315,7 +311,7 @@ void EMSECC::seccInitialize(void *param)
                        });
       loopCount++;
       ESP_LOGI(TAG_EMSECC, "ready. Wait for BootNotification.conf(), then start\n");
-      }
+      //}
     }
 
     if (!evseIsBooted)
@@ -928,7 +924,17 @@ void EMSECC::seccInitialize(void *param)
 
     setOnUnlockConnector([this](){
      //向lpc发送指令 是否成功解锁电子锁，再返回；
-      return false;
+        Payload_UnlockConnectorReq UnlockConnectorReq;
+        Canpacket_ProtocolSend(UnlockConnectorReq);
+        //const char* status =  Canmodel.getUnlockconnectorStatus();
+      if(Canmodel.getUnlockconnectorStatus() == "Unlocked"){
+        return  true;
+      }
+      
+      if(Canmodel.getUnlockconnectorStatus() == "UnlockFailed"){
+        return  false;
+      }
+
     });
 
     setConnectorPluggedSampler([this] () {
@@ -951,31 +957,38 @@ void EMSECC::seccInitialize(void *param)
     {   
         const char *type = payload["type"] | "Soft";
         if (!strcmp(type, "Hard")) {
+            Payload_ResetReq ResetReqHard;
+            Canpacket_ProtocolSend(ResetReqHard,payload);
+            
+            sleep(5);
             ESP.restart();//还需要重启LPC等所有硬件
         }
 
-        if (getTransactionId() >= 0)
-        {
-          stopTransaction();
-        }
-                                  
-        //ulong reboot_timestamp = millis();
-        //ulong scheduleReboot = 5000;
+      if(!strcmp(type, "Soft")){
+          if (getTransactionId() >= 0)
+            {
+              stopTransaction();
+            }
+            Payload_ResetReq ResetReqsoft;
+            Canpacket_ProtocolSend(ResetReqsoft,payload);                     
+            sleep(5);
+            ESP.restart();
+          }
+    });
+      
         
-        sleep(5);
-        ESP.restart();
-
-      });
 
     //远程开启交易的反馈
      setOnRemoteStartTransactionSendConf([this](JsonObject payload){
         const char *connectorId =payload["connectorId"];
-        const char *idtag = payload["idtag"] ;
+        const char *idtag = payload["idTag"] ;
 
         if(getTransactionId()<0){
           this->authStatus.rfidTag.clear();
           this->authStatus.rfidTag.concat(idtag);
-          //向LPC发送远程启动指令
+
+          Payload_RemoteStartReq  RemoteStartReq;
+          Canpacket_ProtocolSend(RemoteStartReq,payload);//向LPC发送远程启动指令
           setFsmState(SECC_State_Preparing, NULL);
           remoteTranscation = true;
         }
@@ -984,7 +997,8 @@ void EMSECC::seccInitialize(void *param)
 
       setOnRemoteStopTransactionSendConf([this](JsonObject payload){
         if(getTransactionId()>0){
-          //向LPC发送远程停止指令
+          Payload_RemoteStopReq RemoteStopReq;
+          Canpacket_ProtocolSend(RemoteStopReq,payload);//向LPC发送远程停止指令
           setFsmState(SECC_State_Finishing, NULL);
         }
 
@@ -1000,14 +1014,105 @@ void EMSECC::seccInitialize(void *param)
         }
         return (const char *) NULL;
     });*/
-      addConnectorErrorCodeSampler([this] () {
+    /*  addConnectorErrorCodeSampler([this] () {
         if (retCode != COMM_SUCCESS) {
             return "EVCommunicationError";
         }
         return (const char *) NULL;
-    });//还可以加ERROR
+    });//还可以加ERROR*/
     //ConnectorLockFailure、ReaderFailure等，见76页
-
+      addConnectorErrorCodeSampler([this] () {
+        if (Canmodel.getErrorCode() == "GroundFailure") {
+          
+            return "GroundFailure";
+        }
+        return (const char *) NULL; 
+    });
+      addConnectorErrorCodeSampler([this] () {
+        if (Canmodel.getErrorCode() == "ConnectorLockFailure") {
+          
+            return "ConnectorLockFailure";
+        }
+        return (const char *) NULL; 
+    });
+      addConnectorErrorCodeSampler([this] () {
+        if (Canmodel.getErrorCode() == "EVCommunicationError") {
+          
+            return "EVCommunicationError";
+        }
+        return (const char *) NULL; 
+    });
+      addConnectorErrorCodeSampler([this] () {
+        if (Canmodel.getErrorCode() == "HighTemperature") {
+          
+            return "HighTemperature";
+        }
+        return (const char *) NULL; 
+    });
+      addConnectorErrorCodeSampler([this] () {
+        if (Canmodel.getErrorCode() == "InternalError") {
+          
+            return "InternalError";
+        }
+        return (const char *) NULL; 
+    });
+      addConnectorErrorCodeSampler([this] () {
+        if (Canmodel.getErrorCode() == "LocalListConflict") {
+          
+            return "LocalListConflict";
+        }
+        return (const char *) NULL; 
+    });
+      addConnectorErrorCodeSampler([this] () {
+        if (Canmodel.getErrorCode() == "OverCurrentFailure") {
+          
+            return "OverCurrentFailure";
+        }
+        return (const char *) NULL; 
+    });
+      addConnectorErrorCodeSampler([this] () {
+        if (Canmodel.getErrorCode() == "OverVoltage") {
+          
+            return "OverVoltage";
+        }
+        return (const char *) NULL; 
+    });
+      addConnectorErrorCodeSampler([this] () {
+        if (Canmodel.getErrorCode() == "PowerMeterFailure") {
+          
+            return "PowerMeterFailure";
+        }
+        return (const char *) NULL; 
+    });
+      addConnectorErrorCodeSampler([this] () {
+        if (Canmodel.getErrorCode() == "PowerSwitchFailure") {
+          
+            return "PowerSwitchFailure";
+        }
+        return (const char *) NULL; 
+    });
+      addConnectorErrorCodeSampler([this] () {
+        if (Canmodel.getErrorCode() == "ReaderFailure") {
+          
+            return "ReaderFailure";
+        }
+        return (const char *) NULL; 
+    });
+      addConnectorErrorCodeSampler([this] () {
+        if (Canmodel.getErrorCode() == "UnderVoltage") {
+          
+            return "UnderVoltage";
+        }
+        return (const char *) NULL; 
+    });
+      addConnectorErrorCodeSampler([this] () {
+        if (Canmodel.getErrorCode() == "WeakSignal") {
+          
+            return "WeakSignal";
+        }
+        return (const char *) NULL; 
+    });
+      
 
   }
 /*
