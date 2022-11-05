@@ -281,20 +281,22 @@ void EMSECC::seccInitialize(void *param)
     static uint32_t loopCount = 0;
     (void)param;
     //float paraA = 1.00;
-    if (!loopCount)
+    if (loopCount< 20000 && BootOcppFlag == false)
     {
       Payload_BootNtf bOOT;
-      //if(Canmodel.CanPacketSave[*(newProtocolCommand[bOOT.CmdID])]!=NULL){
-       // if(Canmodel.BootFlag == true){
+      uint32_t CanID = *newProtocolCommand[bOOT.CmdID];
+      if(Canmodel.CanPacketSave[CanID- frameID*7]!=NULL){
+      //if(Canmodel.BootFlag == true){
       uint64_t mac = ESP.getEfuseMac();
-      String cpSerialNum = String((unsigned long)mac , 16);
-      String cpModel = String(CP_Model);
-      //String cpModel = Canmodel.getchargePointModel();
-      //String cpSerialNum = Canmodel.getchargePointSerialNumber();
-      //String cpVendor = Canmodel.getchargePointVendor();
-      String cpVendor = String(CP_Vendor);    
-      String csUrl =  String(OCPP_URL)+cpVendor+'_'+cpModel+'_'+cpSerialNum ;
-      String fwVersion = String(FWVersion);
+      //String cpSerialNum = String((unsigned long)mac , 16);
+      //String cpModel = String(CP_Model);
+      String cpModel = Canmodel.getchargePointModel();
+      String cpSerialNum = Canmodel.getchargePointSerialNumber();
+      String cpVendor = Canmodel.getchargePointVendor();
+      String fwVersion = Canmodel.getfirmwareVersion();
+      //String cpVendor = String(CP_Vendor);    
+      //String csUrl =  String(OCPP_URL)+cpVendor+'_'+cpModel+'_'+cpSerialNum ;
+      //String fwVersion = String(FWVersion);
       String cbSerialNum = String(CBSerialNum);
       String iccid = String(ICCID);
       String imsi = String(IMSI);
@@ -308,10 +310,14 @@ void EMSECC::seccInitialize(void *param)
                          ESP_LOGD(TAG_EMSECC, "BootNotification was answered. Central System clock: %s", confMsg["currentTime"].as<const char *>()); //as<string>()乱码
                          this->evseIsBooted = true;
                          //esp_set_OcppTime(confMsg["currentTime"].as<const char *>());
+                         Payload_BootCnf BootCnf;
+                         Canpacket_ProtocolSend(BootCnf,confMsg);
                        });
       loopCount++;
       ESP_LOGI(TAG_EMSECC, "ready. Wait for BootNotification.conf(), then start\n");
-      //}
+      Canmodel.BootFlag = false;
+      BootOcppFlag = true;
+      }
     }
 
     if (!evseIsBooted)

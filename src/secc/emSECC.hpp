@@ -60,6 +60,7 @@ private:
     bool evIsPlugged = false;
     bool evRequestsEnergy = false;
     bool evIsLock = false;
+    bool BootOcppFlag = false;
 
     float powerLimit = EVSE_POWER_LIMIT;
 

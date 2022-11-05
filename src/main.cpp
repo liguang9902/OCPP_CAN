@@ -312,9 +312,9 @@ void setup() {
 }
 
 void loop() {
+  Canmodel.loop();
   emSecc->secc_loop();
   OCPP_loop(); 
-  Canmodel.loop();
   /*
   unsigned long currentTime=millis();
 	if(currentTime - previousTime > interval){

@@ -20,7 +20,7 @@ void EVSEModelCan::loop(){
     int packetSize = CAN.parsePacket();
     if (packetSize)
     {
-        //while (CAN.available()){
+        while (CAN.available()){
         for (size_t i = 0; i < 8; i++)
             {
             CanSave += (char)CAN.read();
@@ -28,7 +28,7 @@ void EVSEModelCan::loop(){
            //Serial.println(CanSave) ;
         CanPacketSave[CAN.packetId()] = CanSave;
        // Serial.println(CanPacketSave[CAN.packetId()]);  
-        //}
+        }
     }
     
     //CanProtocol_ChangeAvailabilityNtf(ChangeAvailabilityNtf);// 发送状态更改通知
@@ -121,7 +121,7 @@ void EVSEModelCan::CanProtocol_BootNtf(Payload_BootNtf& payload){
             {
             payload.CPSerialNumber[i] =(char)SavedPacket[i+2];
             }
-             this->BootFlag = true;
+             
         }
         if (CanPacketSave[CanID- frameID]!=NULL)
         {
@@ -130,6 +130,7 @@ void EVSEModelCan::CanProtocol_BootNtf(Payload_BootNtf& payload){
             {
             payload.CPSerialNumber[i] =(char)SavedPacket[i-6];
             }
+            
         }
         if (CanPacketSave[CanID- frameID*2]!=NULL)
         {
@@ -138,6 +139,7 @@ void EVSEModelCan::CanProtocol_BootNtf(Payload_BootNtf& payload){
             {
             payload.CPSerialNumber[i] =(char)SavedPacket[i-14];
             }
+            
         }
         if (CanPacketSave[ CanID- frameID*3]!=NULL)
         {
@@ -150,6 +152,7 @@ void EVSEModelCan::CanProtocol_BootNtf(Payload_BootNtf& payload){
             {
             payload.CPVender[i] =(char)SavedPacket[i+4];
             }
+            this->BootFlag = true;
         }
         if (CanPacketSave[ CanID- frameID*4]!=NULL)
         {
@@ -158,6 +161,7 @@ void EVSEModelCan::CanProtocol_BootNtf(Payload_BootNtf& payload){
             {
             payload.CPVender[i] =(char)SavedPacket[i-4];
             }
+            
         }
         if (CanPacketSave[CanID- frameID*5]!=NULL)
         {
@@ -166,6 +170,7 @@ void EVSEModelCan::CanProtocol_BootNtf(Payload_BootNtf& payload){
             {
             payload.CPVender[i] =(char)SavedPacket[i-12];
             }
+            
         }
         if (CanPacketSave[CanID- frameID*6]!=NULL)
         {
