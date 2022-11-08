@@ -52,8 +52,8 @@ std::map<CPStatus , String> protocolCPStatus{
 	{CP_Status_A2,"A2"},		
 	{CP_Status_B2,"B2"},		
 	{CP_Status_C2,"C2"},		
-	{CP_Status_E,"0E"},
-    {CP_Status_F,"0F"}
+	{CP_Status_E,"INVALID"},
+    {CP_Status_F,"UNKNOWN"}
 };
 
 std::map<LockStatus , String> protocolLockStatus{

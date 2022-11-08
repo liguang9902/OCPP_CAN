@@ -15,13 +15,13 @@ private:
 
     String chargePointModel;
     int connectorNum;
-    String chargePointSerialNumber = "Invalid";
-    String chargePointVendor = "Invalid";
-    String firmwareVersion = "Invalid";  
+    String chargePointSerialNumber;
+    String chargePointVendor;
+    String firmwareVersion;  
 
-    String Cablestatus;
-    String CPstatus;
-    String lockstutus;
+    uint8_t Cablestatus;
+    uint8_t CPstatus = CP_Status_C2;
+    uint8_t lockstutus;
 
     float L1Voltage; float L1Current; float L1Power;
     float L2Voltage; float L2Current; float L2Power;
@@ -84,9 +84,9 @@ public:
     String getchargePointVendor();
     String getfirmwareVersion();  
 
-    String getCablestatus();
-    String getCPstatus();
-    String getlockstutus();
+    uint8_t getCablestatus();
+    uint8_t getCPstatus();
+    uint8_t getlockstutus();
 
     float getL1Voltage(); float getL1current(); float getL1Power();
     float getL2Voltage(); float getL2current(); float getL2Power();

@@ -55,7 +55,7 @@ void EVSEModelCan::CanProtocol_AuthorizeReq(Payload_AuthorizeReq& payload){
     //{
         //Serial.print(CAN.packetId(), HEX);
         char SavedPacket[8];
-        if (CanPacketSave[CanID]!=NULL)
+        if(CanPacketSave.count(CanID))
         {
             
             strcpy(SavedPacket,CanPacketSave[CanID].c_str());
@@ -65,9 +65,10 @@ void EVSEModelCan::CanProtocol_AuthorizeReq(Payload_AuthorizeReq& payload){
             payload.Idtag[i] =SavedPacket[i];
             }
             authorizeFlag = true;
+            CanPacketSave.erase(CanID);
         }
         
-        if (CanPacketSave[CanID - frameID]!=NULL)
+        if(CanPacketSave.count(CanID - frameID))
         {
             strcpy(SavedPacket,CanPacketSave[CanID - frameID].c_str());
             for (size_t i = 8; i < 16; i++)
@@ -75,8 +76,9 @@ void EVSEModelCan::CanProtocol_AuthorizeReq(Payload_AuthorizeReq& payload){
             //payload.Idtag[i] =(char)CAN.read();
             payload.Idtag[i] =SavedPacket[i-8];
             }
+            CanPacketSave.erase(CanID - frameID);
         }
-        if (CanPacketSave[CanID - frameID*2]!=NULL)
+        if(CanPacketSave.count(CanID - frameID*2))
         {
             strcpy(SavedPacket,CanPacketSave[CanID - frameID*2].c_str());
             for (size_t i = 16; i < 20; i++)
@@ -84,6 +86,7 @@ void EVSEModelCan::CanProtocol_AuthorizeReq(Payload_AuthorizeReq& payload){
             payload.Idtag[i] =SavedPacket[i-16];
             }
             payload.connectorID = (int)SavedPacket[4];
+            CanPacketSave.erase(CanID - frameID*2);
         }
         
     //}
@@ -112,36 +115,36 @@ void EVSEModelCan::CanProtocol_BootNtf(Payload_BootNtf& payload){
    // if (packetSize)
     //{
         
-         if (CanPacketSave[CanID]!=NULL)
+         if(CanPacketSave.count(CanID))
         {
             strcpy(SavedPacket,CanPacketSave[CanID].c_str());
             payload.CPModel = SavedPacket[0];
-            payload.connectorNum = SavedPacket[1];
+            payload.connectorNum = (int)SavedPacket[1];
             for (size_t i = 0; i < 6; i++)
             {
             payload.CPSerialNumber[i] =(char)SavedPacket[i+2];
             }
-             
+             CanPacketSave.erase(CanID);
         }
-        if (CanPacketSave[CanID- frameID]!=NULL)
+        if(CanPacketSave.count(CanID- frameID))
         {
             strcpy(SavedPacket,CanPacketSave[CanID- frameID].c_str());
             for (size_t i = 6; i < 14; i++)
             {
             payload.CPSerialNumber[i] =(char)SavedPacket[i-6];
             }
-            
+            CanPacketSave.erase(CanID - frameID);
         }
-        if (CanPacketSave[CanID- frameID*2]!=NULL)
+        if(CanPacketSave.count(CanID- frameID*2))
         {
             strcpy(SavedPacket,CanPacketSave[CanID- frameID*2].c_str());
             for (size_t i = 14; i < 22; i++)
             {
             payload.CPSerialNumber[i] =(char)SavedPacket[i-14];
             }
-            
+            CanPacketSave.erase(CanID - frameID*2);
         }
-        if (CanPacketSave[ CanID- frameID*3]!=NULL)
+        if(CanPacketSave.count( CanID- frameID*3))
         {
             strcpy(SavedPacket,CanPacketSave[CanID- frameID*3].c_str());
             for (size_t i = 22; i < 26; i++)
@@ -152,42 +155,44 @@ void EVSEModelCan::CanProtocol_BootNtf(Payload_BootNtf& payload){
             {
             payload.CPVender[i] =(char)SavedPacket[i+4];
             }
-            this->BootFlag = true;
+            CanPacketSave.erase(CanID - frameID*3);
         }
-        if (CanPacketSave[ CanID- frameID*4]!=NULL)
+        if(CanPacketSave.count( CanID- frameID*4))
         {
             strcpy(SavedPacket,CanPacketSave[CanID- frameID*4].c_str());
             for (size_t i = 4; i < 12; i++)
             {
             payload.CPVender[i] =(char)SavedPacket[i-4];
             }
-            
+            CanPacketSave.erase(CanID - frameID*4);
         }
-        if (CanPacketSave[CanID- frameID*5]!=NULL)
+        if(CanPacketSave.count(CanID- frameID*5))
         {
             strcpy(SavedPacket,CanPacketSave[CanID- frameID*5].c_str());
             for (size_t i = 12; i < 20; i++)
             {
             payload.CPVender[i] =(char)SavedPacket[i-12];
             }
-            
+            CanPacketSave.erase(CanID - frameID*5);
         }
-        if (CanPacketSave[CanID- frameID*6]!=NULL)
+        if(CanPacketSave.count(CanID- frameID*6))
         {
             strcpy(SavedPacket,CanPacketSave[CanID- frameID*6].c_str());
             for (size_t i = 0; i < 8; i++)
             {
             payload.FimwareVersion[i] =(char)SavedPacket[i];
             }
+            CanPacketSave.erase(CanID - frameID*6);
         }
-        if (CanPacketSave[CanID- frameID*7]!=NULL)
+        if(CanPacketSave.count(CanID- frameID*7))
         {
             strcpy(SavedPacket,CanPacketSave[CanID- frameID*7].c_str());
             for (size_t i = 8; i < 16; i++)
             {
             payload.FimwareVersion[i] =(char)SavedPacket[i-8];
             }
-           
+            this->BootFlag = true;
+            CanPacketSave.erase(CanID - frameID*7);
         }
    // }
     chargePointModel = protocolCPModel[(CPModel)payload.CPModel]; //用map将数组与string一一对应
@@ -210,23 +215,21 @@ void EVSEModelCan::CanProtocol_BootNtf(Payload_BootNtf& payload){
     chargePointSerialNumber = ChargePointSerialNumber;
     chargePointVendor = ChargePointVendor;
     firmwareVersion = FirmwareVersion;
-    /*
-    if (chargePointSerialNumber!=NULL )
-    {
     
+    /*
     Serial.println(chargePointModel);
-    Serial.println(payload.connectorNum);
+    Serial.println(connectorNum);
     Serial.println(chargePointSerialNumber);
     Serial.println(chargePointVendor);
     Serial.println(firmwareVersion);
-    }
     */
+    
 }
 
 void EVSEModelCan::CanProtocol_HeartbeatReq(Payload_HeartbeatReq& payload){
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
     char SavedPacket[8];
-    if (CanPacketSave[CanID]!=NULL)
+    if(CanPacketSave.count(CanID))
         {
             strcpy(SavedPacket,CanPacketSave[CanID].c_str());
             payload.connectorID = (int)SavedPacket[0];
@@ -238,9 +241,12 @@ void EVSEModelCan::CanProtocol_HeartbeatReq(Payload_HeartbeatReq& payload){
             CanPacketSave.erase(CanID);
         }
     HeartbeatCID = payload.connectorID;
-    Cablestatus = protocolCableStatus[(CableStatus)payload.statusCB];
-    CPstatus = protocolCPStatus[(CPStatus)payload.statusCP];
-    lockstutus = protocolLockStatus[(LockStatus)payload.statusLock];
+    //Cablestatus = protocolCableStatus[(CableStatus)payload.statusCB];
+    //CPstatus = protocolCPStatus[(CPStatus)payload.statusCP];
+    //lockstutus = protocolLockStatus[(LockStatus)payload.statusLock];
+    Cablestatus = (CableStatus)payload.statusCB;
+    CPstatus = payload.statusCP;
+    lockstutus = (LockStatus)payload.statusLock;
     /*if (lockstutus!=NULL )
     {
     
@@ -254,7 +260,7 @@ void EVSEModelCan::CanProtocol_HeartbeatReq(Payload_HeartbeatReq& payload){
 void EVSEModelCan::CanProtocol_MeterValueNtf(Payload_MeterValueNtf& payload){
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
     char SavedPacket[8];
-    if (CanPacketSave[CanID]!=NULL)
+    if(CanPacketSave.count(CanID))
         {
             strcpy(SavedPacket,CanPacketSave[CanID].c_str());
             payload.currentTime.tm_year =((int)SavedPacket[0])*100 + (int)SavedPacket[1];
@@ -263,33 +269,38 @@ void EVSEModelCan::CanProtocol_MeterValueNtf(Payload_MeterValueNtf& payload){
             payload.currentTime.tm_hour = (int)SavedPacket[4];
             payload.currentTime.tm_min = (int)SavedPacket[5];
             payload.currentTime.tm_sec = (int)SavedPacket[6];
+            CanPacketSave.erase(CanID);
         }
-    if (CanPacketSave[CanID- frameID]!=NULL)
+    if(CanPacketSave.count(CanID- frameID))
         {
             strcpy(SavedPacket,CanPacketSave[CanID- frameID].c_str());
             payload.connectorID = (int)SavedPacket[0];
             payload.L1Voltage = (float)SavedPacket[1]*100+(float)SavedPacket[2]+(float)SavedPacket[3]/100;
             payload.L1Current = (float)SavedPacket[4]*100+(float)SavedPacket[5]+(float)SavedPacket[6]/100;
+            CanPacketSave.erase(CanID - frameID);
         }
-    if (CanPacketSave[CanID- frameID*2]!=NULL)
+    if(CanPacketSave.count(CanID- frameID*2))
         {
             strcpy(SavedPacket,CanPacketSave[CanID- frameID*2].c_str());
             payload.L1Power = (float)SavedPacket[0]*100+(float)SavedPacket[1]+(float)SavedPacket[2]/100;
             payload.L2Voltage = (float)SavedPacket[3]*100+(float)SavedPacket[4]+(float)SavedPacket[5]/100;
+            CanPacketSave.erase(CanID - frameID*2);
         }    
-    if (CanPacketSave[CanID- frameID*3]!=NULL)
+    if(CanPacketSave.count(CanID- frameID*3))
         {
             strcpy(SavedPacket,CanPacketSave[CanID- frameID*3].c_str());
             payload.L2Current = (float)SavedPacket[0]*100+(float)SavedPacket[1]+(float)SavedPacket[2]/100;
             payload.L2Power = (float)SavedPacket[3]*100+(float)SavedPacket[4]+(float)SavedPacket[5]/100;
+            CanPacketSave.erase(CanID - frameID*3);
         }        
-    if (CanPacketSave[CanID- frameID*4]!=NULL)
+    if(CanPacketSave.count(CanID- frameID*4))
         {
             strcpy(SavedPacket,CanPacketSave[CanID- frameID*4].c_str());
             payload.L3Voltage = (float)SavedPacket[0]*100+(float)SavedPacket[1]+(float)SavedPacket[2]/100;
             payload.L3Current = (float)SavedPacket[3]*100+(float)SavedPacket[4]+(float)SavedPacket[5]/100;
+            CanPacketSave.erase(CanID - frameID*4);
         }    
-    if (CanPacketSave[CanID- frameID*5]!=NULL)
+    if(CanPacketSave.count(CanID- frameID*5))
         {
             strcpy(SavedPacket,CanPacketSave[CanID- frameID*5].c_str());
             payload.L3Power = (float)SavedPacket[0]*100+(float)SavedPacket[1]+(float)SavedPacket[2]/100;
@@ -321,7 +332,7 @@ void EVSEModelCan::CanProtocol_MeterValueNtf(Payload_MeterValueNtf& payload){
 void EVSEModelCan::CanProtocol_StopChargingNtf(Payload_StopChargingNtf& payload){
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
     char SavedPacket[8];
-    if (CanPacketSave[CanID]!=NULL)
+    if(CanPacketSave.count(CanID))
         {
             strcpy(SavedPacket,CanPacketSave[CanID].c_str());
            for (size_t i = 0; i < 8; i++)
@@ -332,7 +343,7 @@ void EVSEModelCan::CanProtocol_StopChargingNtf(Payload_StopChargingNtf& payload)
             Canpacket_ProtocolSend(StopChargingCnf);
             CanPacketSave.erase(CanID);
         }
-    if (CanPacketSave[CanID - frameID]!=NULL)
+    if(CanPacketSave.count(CanID - frameID))
         {
             strcpy(SavedPacket,CanPacketSave[CanID - frameID].c_str());
             for (size_t i = 8; i < 16; i++)
@@ -340,8 +351,9 @@ void EVSEModelCan::CanProtocol_StopChargingNtf(Payload_StopChargingNtf& payload)
             //payload.Idtag[i] =(char)CAN.read();
             payload.Idtag[i] =SavedPacket[i-8];
             }
+            CanPacketSave.erase(CanID - frameID);
         }
-    if (CanPacketSave[CanID - frameID*2]!=NULL)
+    if(CanPacketSave.count(CanID - frameID*2))
         {
             strcpy(SavedPacket,CanPacketSave[CanID - frameID*2].c_str());
             for (size_t i = 16; i < 20; i++)
@@ -350,8 +362,9 @@ void EVSEModelCan::CanProtocol_StopChargingNtf(Payload_StopChargingNtf& payload)
             }
             payload.MeterStop = (float)SavedPacket[4]*100+(float)SavedPacket[5]+(float)SavedPacket[6]/100;
             payload.StopReason = SavedPacket[7];
+            CanPacketSave.erase(CanID - frameID*2);
         }
-    if (CanPacketSave[CanID - frameID*3]!=NULL)
+    if(CanPacketSave.count(CanID - frameID*3))
         {
             strcpy(SavedPacket,CanPacketSave[CanID-frameID*3].c_str());
             payload.Timestamp.tm_year =((int)SavedPacket[0])*100 + (int)SavedPacket[1];
@@ -360,11 +373,13 @@ void EVSEModelCan::CanProtocol_StopChargingNtf(Payload_StopChargingNtf& payload)
             payload.Timestamp.tm_hour = (int)SavedPacket[4];
             payload.Timestamp.tm_min = (int)SavedPacket[5];
             payload.Timestamp.tm_sec = (int)SavedPacket[6];
+            CanPacketSave.erase(CanID - frameID*3);
         }
-    if (CanPacketSave[CanID - frameID*4]!=NULL)
+    if(CanPacketSave.count(CanID - frameID*4))
         {
             strcpy(SavedPacket,CanPacketSave[CanID-frameID*4].c_str());
-            payload.connectorID = (int)SavedPacket[0];          
+            payload.connectorID = (int)SavedPacket[0];    
+            CanPacketSave.erase(CanID - frameID*4);      
         }
         String IDTag;
     for (size_t i = 0; i < 20; i++)
@@ -392,7 +407,7 @@ void EVSEModelCan::CanProtocol_StopChargingNtf(Payload_StopChargingNtf& payload)
 void EVSEModelCan::CanProtocol_ErrorNtf(Payload_ErrorNtf& payload){
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
     char SavedPacket[8];
-    if (CanPacketSave[CanID]!=NULL)
+    if(CanPacketSave.count(CanID))
         {
             strcpy(SavedPacket,CanPacketSave[CanID].c_str());
             payload.Timestamp.tm_year =((int)SavedPacket[0])*100 + (int)SavedPacket[1];
@@ -401,8 +416,9 @@ void EVSEModelCan::CanProtocol_ErrorNtf(Payload_ErrorNtf& payload){
             payload.Timestamp.tm_hour = (int)SavedPacket[4];
             payload.Timestamp.tm_min = (int)SavedPacket[5];
             payload.Timestamp.tm_sec = (int)SavedPacket[6];
+            CanPacketSave.erase(CanID);
         }
-    if (CanPacketSave[CanID - frameID]!=NULL)
+    if(CanPacketSave.count(CanID - frameID))
         {
             strcpy(SavedPacket,CanPacketSave[CanID - frameID].c_str());
             payload.connectorID = (int)SavedPacket[0];
@@ -427,10 +443,11 @@ void EVSEModelCan::CanProtocol_ErrorNtf(Payload_ErrorNtf& payload){
 void EVSEModelCan::CanProtocol_ChangeAvailabilityCnf(Payload_ChangeAvailabilityCnf& payload){
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
     char SavedPacket[8];
-    if (CanPacketSave[CanID]!=NULL)
+    if(CanPacketSave.count(CanID))
         {
             strcpy(SavedPacket,CanPacketSave[CanID].c_str());
             payload.CAResstatus = SavedPacket[0];
+            CanPacketSave.erase(CanID);
         }
     ChangeAvailabilityStatus = protocolChangeAvailabilityCnfStatus[(ChangeAvailabilityCnfStatus)payload.CAResstatus];
     //Serial.println(ChangeAvailabilityStatus);
@@ -439,10 +456,11 @@ void EVSEModelCan::CanProtocol_ChangeAvailabilityCnf(Payload_ChangeAvailabilityC
 void EVSEModelCan::CanProtocol_RemoteStartRes(Payload_RemoteStartRes& payload){
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
     char SavedPacket[8];
-    if (CanPacketSave[CanID]!=NULL)
+    if(CanPacketSave.count(CanID))
         {
             strcpy(SavedPacket,CanPacketSave[CanID].c_str());
             payload.status = SavedPacket[0];
+            CanPacketSave.erase(CanID);
         }
     RemoteStartStatus = protocolCommonStatus[(CommonStatus)payload.status];
     //Serial.println(RemoteStartStatus);
@@ -451,10 +469,11 @@ void EVSEModelCan::CanProtocol_RemoteStartRes(Payload_RemoteStartRes& payload){
 void EVSEModelCan::CanProtocol_RemoteStopRes(Payload_RemoteStopRes& payload){
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
     char SavedPacket[8];
-    if (CanPacketSave[CanID]!=NULL)
+    if(CanPacketSave.count(CanID))
         {
             strcpy(SavedPacket,CanPacketSave[CanID].c_str());
             payload.status = SavedPacket[0];
+            CanPacketSave.erase(CanID);
         }
     RemoteStopStatus = protocolCommonStatus[(CommonStatus)payload.status];
     //Serial.println(RemoteStopStatus);
@@ -463,10 +482,11 @@ void EVSEModelCan::CanProtocol_RemoteStopRes(Payload_RemoteStopRes& payload){
 void EVSEModelCan::CanProtocol_ResetRes(Payload_ResetRes& payload){
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
     char SavedPacket[8];
-    if (CanPacketSave[CanID]!=NULL)
+    if(CanPacketSave.count(CanID))
         {
             strcpy(SavedPacket,CanPacketSave[CanID].c_str());
             payload.status = SavedPacket[0];
+            CanPacketSave.erase(CanID);
         }
     ResetStatus = protocolCommonStatus[(CommonStatus)payload.status];
     //Serial.println(ResetStatus);
@@ -475,10 +495,11 @@ void EVSEModelCan::CanProtocol_ResetRes(Payload_ResetRes& payload){
 void EVSEModelCan::CanProtocol_UnlockConnectorRes(Payload_UnlockConnectorRes& payload){
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
     char SavedPacket[8];
-    if (CanPacketSave[CanID]!=NULL)
+    if(CanPacketSave.count(CanID))
         {
             strcpy(SavedPacket,CanPacketSave[CanID].c_str());
             payload.StatusUnlockConnector = SavedPacket[0];
+            CanPacketSave.erase(CanID);
         }
     UnlockconnectorStatus = protocolUnlockConnectorStatus[(UnlockConnectorStatus)payload.StatusUnlockConnector];
     //Serial.println(UnlockconnectorStatus);
@@ -521,15 +542,15 @@ String EVSEModelCan::getfirmwareVersion(){
     return firmwareVersion;
 }  
 
-String EVSEModelCan::getCablestatus(){
+uint8_t EVSEModelCan::getCablestatus(){
     return Cablestatus;
 }
 
-String EVSEModelCan::getCPstatus(){
+uint8_t EVSEModelCan::getCPstatus(){
     return CPstatus;
 }
 
-String EVSEModelCan::getlockstutus(){
+uint8_t EVSEModelCan::getlockstutus(){
     return lockstutus;
 }
 

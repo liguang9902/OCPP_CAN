@@ -285,8 +285,8 @@ void EMSECC::seccInitialize(void *param)
     {
       Payload_BootNtf bOOT;
       uint32_t CanID = *newProtocolCommand[bOOT.CmdID];
-      if(Canmodel.CanPacketSave[CanID- frameID*7]!=NULL){
-      //if(Canmodel.BootFlag == true){
+      //if(Canmodel.CanPacketSave[CanID- frameID*7]!=NULL){
+      if(Canmodel.BootFlag == true){
       uint64_t mac = ESP.getEfuseMac();
       //String cpSerialNum = String((unsigned long)mac , 16);
       //String cpModel = String(CP_Model);
@@ -315,8 +315,10 @@ void EMSECC::seccInitialize(void *param)
                        });
       loopCount++;
       ESP_LOGI(TAG_EMSECC, "ready. Wait for BootNotification.conf(), then start\n");
-      Canmodel.BootFlag = false;
       BootOcppFlag = true;
+      }
+      else{
+        ESP_LOGI(TAG_EMSECC, "Wait for Boot.ntf() from EVSE\n");
       }
     }
 
@@ -360,7 +362,7 @@ void EMSECC::seccInitialize(void *param)
     static uint32_t loopCount = 0;
     (void)param;
     COMM_ERROR_E retCode = COMM_SUCCESS;
-
+    /*
     RequestPayloadEVSE_getEVSEState reqGetEvseState;
     retCode = emEVSE->sendRequest(reqGetEvseState);
     if (retCode != COMM_SUCCESS)
@@ -378,43 +380,42 @@ void EMSECC::seccInitialize(void *param)
       ESP_LOGE(TAG_EMSECC, "Receive Response_getEVSEState error:%d while seccWaiting\r\n", retCode);
       setFsmState(SECC_State_SuspendedEVSE, NULL);
       return;
-    };
-
-    switch (resGetEvseState.stateCP)
+    };*/
+    uint8_t CPstatus = Canmodel.getCPstatus();
+    switch (CPstatus)
     {
-    case CP_STATE_INVALID:
-      ESP_LOGE(TAG_EMSECC, "EVSE Reported CP error State:%s(%d)\r\n", CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP);
+    case CP_Status_E:
+      ESP_LOGE(TAG_EMSECC, "EVSE Reported CP error State:%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       setFsmState(SECC_State_SuspendedEVSE, NULL);
       break;
-    case CP_STATE_UNKNOWN:
-      ESP_LOGW(TAG_EMSECC, "EVSE CP State Unknown! :%s(%d)\r\n", CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP);
+    case CP_Status_F:
+      ESP_LOGW(TAG_EMSECC, "EVSE CP State Unknown! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       break;
-    case CP_STATE_A:
-      ESP_LOGI(TAG_EMSECC, "EVSE CP State unPlugin! :%s(%d)\r\n", CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP);
+    case CP_Status_A1:
+      ESP_LOGI(TAG_EMSECC, "EVSE CP State unPlugin! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       this->evIsPlugged = false;
       break;
-    case CP_STATE_B:
-      ESP_LOGI(TAG_EMSECC, "EVSE CP State Plugin! :%s(%d)\r\n", CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP);
+    case CP_Status_B2:
+      ESP_LOGI(TAG_EMSECC, "EVSE CP State Plugin! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       this->evIsPlugged = true;
       break;
-    case CP_STATE_C:
-      ESP_LOGI(TAG_EMSECC, "EVSE CP State S2! :%s(%d)\r\n", CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP);
+    case CP_Status_C2:
+      ESP_LOGI(TAG_EMSECC, "EVSE CP State S2! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       this->evIsPlugged = true;
       this->evRequestsEnergy = true;
       break;
     default:
-      ESP_LOGE(TAG_EMSECC, "EVSE Reported CP State:%s(%d) , unspported!\r\n", CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP);
-      setFsmState(SECC_State_SuspendedEVSE, NULL);
+      ESP_LOGE(TAG_EMSECC, "EVSE Reported CP State:%s(%d) , unspported!\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
+      //setFsmState(SECC_State_SuspendedEVSE, NULL);
       break;
     }
-
-    ESP_LOGD(TAG_EMSECC, "EVSEState [PP=%s(%d) CP=%s(%d)] (RequestsEnergy=%d)",
-             PPStateName[resGetEvseState.statePP].c_str(), resGetEvseState.statePP,
-             CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP, this->evRequestsEnergy);
+    ESP_LOGD(TAG_EMSECC, "EVSEState [CP=%s(%d)] (RequestsEnergy=%d)",
+             //PPStateName[resGetEvseState.statePP].c_str(), resGetEvseState.statePP,
+             protocolCPStatus[(CPStatus)CPstatus], CPstatus, this->evRequestsEnergy);
 
     if ((this->authStatus.authState != STATE_AUTHORIZING) && (this->authStatus.authState != STATE_AUTHORIZE_SUCCESS))
     {
-      
+      /*
       RequestPayloadEVSE_getRFIDState reqGetRfidState;
       retCode = emEVSE->sendRequest(reqGetRfidState);
       if (retCode != COMM_SUCCESS)
@@ -434,18 +435,20 @@ void EMSECC::seccInitialize(void *param)
         return;
       };
       //ESP_LOGD(TAG_EMSECC, "EVSEState [RFID:%d]", resGetRfidState.StateRFID);
-      if (resGetRfidState.StateRFID == RFID_LENGTH_MAX)
+      if (resGetRfidState.StateRFID == RFID_LENGTH_MAX)*/
+      if(Canmodel.authorizeFlag == true)
       {
         authorizationProvided = true; //Deprecated
         //setAuthorizedStatus(resGetRfidState.StateRFID , resGetRfidState.rfid);
-        this->authStatus.authorizationProvided = (uint8_t)resGetRfidState.StateRFID;
+        //this->authStatus.authorizationProvided = (uint8_t)resGetRfidState.StateRFID;
         this->authStatus.rfidTag.clear();
-        this->authStatus.rfidTag.concat(resGetRfidState.rfid.c_str());
-        ESP_LOGD(TAG_EMSECC, "EVSEState [RFID:(%d)%s]", this->authStatus.authorizationProvided, this->authStatus.rfidTag.c_str());
+        this->authStatus.rfidTag.concat(Canmodel.getAuthorizeidtag().c_str());
+        ESP_LOGD(TAG_EMSECC, "EVSEState [RFID:%s]", this->authStatus.rfidTag.c_str());
+        Canmodel.authorizeFlag = false;
       }
       else
       {
-        ESP_LOGW(TAG_EMSECC, "Tag=%s Format Error!\r\n", resGetRfidState.rfid);
+        ESP_LOGW(TAG_EMSECC, "wait for Authorize.req!\r\n");
       }
     }
 
@@ -473,8 +476,11 @@ void EMSECC::seccInitialize(void *param)
               {
                 //const char* idTagInfo_status = doc["idTagInfo"]["status"]; // "Accepted"
                 //const char* idTagInfo_expiryDate = doc["idTagInfo"]["expiryDate"]; // "2021-12-03T21:34:11.791Z"
-                if (strcmp(confMsg["idTagInfo"]["status"], "Accepted") == 0)
-                  this->authStatus.authState = STATE_AUTHORIZE_SUCCESS;
+                if (strcmp(confMsg["idTagInfo"]["status"], "Accepted") == 0){
+                    this->authStatus.authState = STATE_AUTHORIZE_SUCCESS;
+                    Payload_AuthorizeRes  AuthorizeRes;
+                    Canpacket_ProtocolSend(AuthorizeRes,confMsg);
+                  }
                 if(!getSessionIdTag()){
                   beginSession(this->authStatus.rfidTag.c_str());
                 }
@@ -549,7 +555,7 @@ void EMSECC::seccInitialize(void *param)
      if(remoteTranscation =true){
 
      }
-
+    /*
     RequestPayloadEVSE_getEVSEState reqGetEvseState;
     retCode = emEVSE->sendRequest(reqGetEvseState);
     if (retCode != COMM_SUCCESS)
@@ -568,39 +574,40 @@ void EMSECC::seccInitialize(void *param)
       setFsmState(SECC_State_SuspendedEVSE, NULL);
       return;
     };
-
-    switch (resGetEvseState.stateCP)
+    */
+    uint8_t CPstatus = Canmodel.getCPstatus();
+    switch (CPstatus)
     {
-    case CP_STATE_INVALID:
-      ESP_LOGE(TAG_EMSECC, "EVSE Reported CP error State:%s(%d)\r\n", CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP);
+    case CP_Status_E:
+      ESP_LOGE(TAG_EMSECC, "EVSE Reported CP error State:%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       setFsmState(SECC_State_SuspendedEVSE, NULL);
       break;
-    case CP_STATE_UNKNOWN:
-      ESP_LOGW(TAG_EMSECC, "EVSE CP State Unknown! :%s(%d)\r\n", CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP);
+    case CP_Status_F:
+      ESP_LOGW(TAG_EMSECC, "EVSE CP State Unknown! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       break;
-    case CP_STATE_A:
-      ESP_LOGI(TAG_EMSECC, "EVSE CP State unPlugin! :%s(%d)\r\n", CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP);
+    case CP_Status_A1:
+      ESP_LOGI(TAG_EMSECC, "EVSE CP State unPlugin! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       this->evIsPlugged = false;
       break;
-    case CP_STATE_B:
-      ESP_LOGI(TAG_EMSECC, "EVSE CP State Plugin! :%s(%d)\r\n", CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP);
+    case CP_Status_B2:
+      ESP_LOGI(TAG_EMSECC, "EVSE CP State Plugin! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       this->evIsPlugged = true;
       break;
-    case CP_STATE_C:
-      ESP_LOGI(TAG_EMSECC, "EVSE CP State S2! :%s(%d)\r\n", CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP);
+    case CP_Status_C2:
+      ESP_LOGI(TAG_EMSECC, "EVSE CP State S2! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       this->evIsPlugged = true;
       this->evRequestsEnergy = true;
       break;
     default:
-      ESP_LOGE(TAG_EMSECC, "EVSE Reported CP State:%s(%d) , unspported!\r\n", CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP);
-      setFsmState(SECC_State_SuspendedEVSE, NULL);
+      ESP_LOGE(TAG_EMSECC, "EVSE Reported CP State:%s(%d) , unspported!\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
+      //setFsmState(SECC_State_SuspendedEVSE, NULL);
       break;
     }
-    ESP_LOGD(TAG_EMSECC, "EVSEState [PP=%s(%d) CP=%s(%d)] (RequestsEnergy=%d)",
-             PPStateName[resGetEvseState.statePP].c_str(), resGetEvseState.statePP,
-             CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP, this->evRequestsEnergy);
+    ESP_LOGD(TAG_EMSECC, "EVSEState [CP=%s(%d)] (RequestsEnergy=%d)",
+             //PPStateName[resGetEvseState.statePP].c_str(), resGetEvseState.statePP,
+             protocolCPStatus[(CPStatus)CPstatus], CPstatus, this->evRequestsEnergy);
 
-    if (resGetEvseState.stateLock == LOCK_STATE_LOCKED)
+    if (Canmodel.getlockstutus() == locked)
       this->evIsLock = true;
     else
       this->evIsLock = false;
@@ -667,7 +674,7 @@ void EMSECC::seccInitialize(void *param)
         ESP_LOGW(TAG_EMSECC, "TransactionId = %ld , Going on transaction II\n", tid);
       }
     }
-
+    /*
     RequestPayloadEVSE_getEVSEState reqGetEvseState;
     retCode = emEVSE->sendRequest(reqGetEvseState);
     if (retCode != COMM_SUCCESS)
@@ -685,40 +692,40 @@ void EMSECC::seccInitialize(void *param)
       ESP_LOGE(TAG_EMSECC, "Receive Response_getEVSEState error:%d while seccPreCharge\r\n", retCode);
       setFsmState(SECC_State_SuspendedEVSE, NULL);
       return;
-    };
-
-    switch (resGetEvseState.stateCP)
+    };*/
+    uint8_t CPstatus = Canmodel.getCPstatus();
+    switch (CPstatus)
     {
-    case CP_STATE_INVALID:
-      ESP_LOGE(TAG_EMSECC, "EVSE Reported CP error State:%s(%d)\r\n", CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP);
+    case CP_Status_E:
+      ESP_LOGE(TAG_EMSECC, "EVSE Reported CP error State:%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       setFsmState(SECC_State_SuspendedEVSE, NULL);
       break;
-    case CP_STATE_UNKNOWN:
-      ESP_LOGW(TAG_EMSECC, "EVSE CP State Unknown! :%s(%d)\r\n", CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP);
+    case CP_Status_F:
+      ESP_LOGW(TAG_EMSECC, "EVSE CP State Unknown! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       break;
-    case CP_STATE_A:
-      ESP_LOGI(TAG_EMSECC, "EVSE CP State unPlugin! :%s(%d)\r\n", CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP);
+    case CP_Status_A1:
+      ESP_LOGI(TAG_EMSECC, "EVSE CP State unPlugin! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       this->evIsPlugged = false;
       break;
-    case CP_STATE_B:
-      ESP_LOGI(TAG_EMSECC, "EVSE CP State Plugin! :%s(%d)\r\n", CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP);
+    case CP_Status_B2:
+      ESP_LOGI(TAG_EMSECC, "EVSE CP State Plugin! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       this->evIsPlugged = true;
       break;
-    case CP_STATE_C:
-      ESP_LOGI(TAG_EMSECC, "EVSE CP State S2! :%s(%d)\r\n", CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP);
+    case CP_Status_C2:
+      ESP_LOGI(TAG_EMSECC, "EVSE CP State S2! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       this->evIsPlugged = true;
       this->evRequestsEnergy = true;
       break;
     default:
-      ESP_LOGE(TAG_EMSECC, "EVSE Reported CP State:%s(%d) , unspported!\r\n", CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP);
-      setFsmState(SECC_State_SuspendedEVSE, NULL);
+      ESP_LOGE(TAG_EMSECC, "EVSE Reported CP State:%s(%d) , unspported!\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
+      //setFsmState(SECC_State_SuspendedEVSE, NULL);
       break;
     }
-    ESP_LOGD(TAG_EMSECC, "EVSEState [PP=%s(%d) CP=%s(%d)] (RequestsEnergy=%d)",
-             PPStateName[resGetEvseState.statePP].c_str(), resGetEvseState.statePP,
-             CPStateName[resGetEvseState.stateCP].c_str(), resGetEvseState.stateCP, this->evRequestsEnergy);
+    ESP_LOGD(TAG_EMSECC, "EVSEState [CP=%s(%d)] (RequestsEnergy=%d)",
+             //PPStateName[resGetEvseState.statePP].c_str(), resGetEvseState.statePP,
+             protocolCPStatus[(CPStatus)CPstatus], CPstatus, this->evRequestsEnergy);
 
-    if (resGetEvseState.stateLock == LOCK_STATE_LOCKED)
+    if (Canmodel.getlockstutus() == locked)
       this->evIsLock = true;
     else
       this->evIsLock = false;
@@ -889,7 +896,7 @@ void EMSECC::seccInitialize(void *param)
     
      setPowerActiveImportSampler([this]() {
         //return (float) (emEVSE->getAmps() * emEVSE->getVoltage());
-        return 5000;
+        return Canmodel.getL1Power()+Canmodel.getL2Power()+Canmodel.getL3Power();
     });
 
     setEnergyActiveImportSampler([this] () {
@@ -954,7 +961,7 @@ void EMSECC::seccInitialize(void *param)
     });
 
     setConnectorEnergizedSampler([this] () {
-        //return emEVSE->isActive();
+        
         return this->evIsLock;
     });
 
@@ -995,6 +1002,11 @@ void EMSECC::seccInitialize(void *param)
 
           Payload_RemoteStartReq  RemoteStartReq;
           Canpacket_ProtocolSend(RemoteStartReq,payload);//向LPC发送远程启动指令
+          /*if (this->evIsPlugged &&this->evRequestsEnergy )
+            {
+              ESP_LOGD(TAG_EMSECC, "RemoteStartTransaction-------------->SECC_State_Preparing");
+              setFsmState(SECC_State_Preparing, NULL);
+            }*/
           setFsmState(SECC_State_Preparing, NULL);
           remoteTranscation = true;
         }

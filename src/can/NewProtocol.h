@@ -69,14 +69,14 @@ typedef enum{
 extern std::map<CableStatus , String> protocolCableStatus;
 
 typedef enum{
-    CP_Status_A1 = 0xA1,		
-	CP_Status_B1 = 0xB1,		
+    CP_Status_A1 = 0xA1,		//To EVCC :12V
+	CP_Status_B1 = 0xB1,		//To EVCC :9V   ,plugin
 	CP_Status_C1 = 0xC1,		
 	CP_Status_A2 = 0xA2,		
-	CP_Status_B2 = 0xB2,		
-	CP_Status_C2 = 0xC2,		
-	CP_Status_E = 0x0E,
-    CP_Status_F = 0x0F
+	CP_Status_B2 = 0xB2,		//To EVCC :9V   ,?plugin
+	CP_Status_C2 = 0xC2,		//To EVCC :6V   ,s2 
+	CP_Status_E = 0x0E,         //INVALID
+    CP_Status_F = 0x0F          //UNKNOWN
 }CPStatus;
 extern std::map<CPStatus , String> protocolCPStatus;
 
