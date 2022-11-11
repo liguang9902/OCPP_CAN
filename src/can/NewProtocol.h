@@ -231,6 +231,7 @@ struct Payload_MeterValueNtf
     float L3Voltage;
     float L3Current;
     float L3Power;
+    float TotalElectricity;
 };
 
 struct Payload_MeterValueCnf

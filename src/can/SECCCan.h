@@ -20,12 +20,14 @@ private:
     String firmwareVersion;  
 
     uint8_t Cablestatus;
-    uint8_t CPstatus = CP_Status_C2;
+    uint8_t CPstatus;
     uint8_t lockstutus;
 
     float L1Voltage; float L1Current; float L1Power;
     float L2Voltage; float L2Current; float L2Power;
     float L3Voltage; float L3Current; float L3Power;
+
+    float TotalElectricity;
 
     float MeterStop;
     //tm currentTime;
@@ -96,7 +98,8 @@ public:
     int getUsingconnecterID();
     String getErrorCode();
     float getMeterStop();
-    
+    float getTotalElectricity();
+
     tm getMeterValueTimestamp();tm getStopChargingTimestamp();tm getErrorTimestamp();
     String getAuthorizeidtag();String getStopChargingidtag();
     int getAuthorizeCID();int getHeartbeatCID();int getMeterValueCID();int getStopChargingCID();int getErrorCID();

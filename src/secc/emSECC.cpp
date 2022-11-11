@@ -480,9 +480,9 @@ void EMSECC::seccInitialize(void *param)
                     this->authStatus.authState = STATE_AUTHORIZE_SUCCESS;
                     Payload_AuthorizeRes  AuthorizeRes;
                     Canpacket_ProtocolSend(AuthorizeRes,confMsg);
-                  }
-                if(!getSessionIdTag()){
-                  beginSession(this->authStatus.rfidTag.c_str());
+                    if(!getSessionIdTag()){
+                    beginSession(this->authStatus.rfidTag.c_str());
+                    }
                 }
               }
             },
@@ -748,10 +748,10 @@ void EMSECC::seccInitialize(void *param)
     //ESP_LOGD(TAG_EMSECC, "SECC Finance ...\r\n");//此处需判断缴费情况
     //sleep(3);
     this->FinanceSuccess = false;
-    if(FinanceSuccess){
+    //if(FinanceSuccess){
     endSession();
     this->FinanceSuccess = true;
-    }
+    //}
    //setFsmState(SECC_State_Waitting, NULL);
   }
 
@@ -904,13 +904,13 @@ void EMSECC::seccInitialize(void *param)
         activeImport += (float) emEVSE->getTotalEnergy();
         activeImport += (float) emEVSE->getSessionEnergy();
         return activeImport;*/
-
-        static ulong lastSampled = millis();
+        return Canmodel.getTotalElectricity();//消耗的总电量
+       /* static ulong lastSampled = millis();
                                    static float energyMeter = 0.f;
                                    if (getTransactionId() > 0 && 1)                           // digitalRead(EV_CHARGE_PIN) == EV_CHARGING
                                      energyMeter += ((float)millis() - lastSampled) * 0.003f; //increase by 0.003Wh per ms (~ 10.8kWh per h)
                                    lastSampled = millis();
-                                   return energyMeter;
+                                   return energyMeter;*/
     });
 
     setOnChargingRateLimitChange([this] (float limit) { //limit = maximum charge rate in Watts

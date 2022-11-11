@@ -304,6 +304,7 @@ void EVSEModelCan::CanProtocol_MeterValueNtf(Payload_MeterValueNtf& payload){
         {
             strcpy(SavedPacket,CanPacketSave[CanID- frameID*5].c_str());
             payload.L3Power = (float)SavedPacket[0]*100+(float)SavedPacket[1]+(float)SavedPacket[2]/100;
+            payload.TotalElectricity = (float)SavedPacket[3]*100+(float)SavedPacket[4]+(float)SavedPacket[5]/100;
             Payload_MeterValueCnf MeterValueCnf;
             Canpacket_ProtocolSend(MeterValueCnf);
             CanPacketSave.erase(CanID- frameID*5);
@@ -315,6 +316,7 @@ void EVSEModelCan::CanProtocol_MeterValueNtf(Payload_MeterValueNtf& payload){
     L1Voltage = payload.L1Voltage;L1Current = payload.L1Current;L1Power = payload.L1Power;
     L2Voltage = payload.L2Voltage;L2Current = payload.L2Current;L2Power = payload.L2Power;
     L3Voltage = payload.L3Voltage;L3Current = payload.L3Current;L3Power = payload.L3Power;
+    TotalElectricity = payload.TotalElectricity;
     /*
     Serial.println(currentTime);
     Serial.println(UsingconnecterID);
@@ -660,6 +662,10 @@ String EVSEModelCan::getResetStatus(){
 
 String EVSEModelCan::getUnlockconnectorStatus(){
     return UnlockconnectorStatus;
+}
+
+float EVSEModelCan::getTotalElectricity(){
+    return TotalElectricity;
 }
 
 EVSEModelCan  Canmodel;
