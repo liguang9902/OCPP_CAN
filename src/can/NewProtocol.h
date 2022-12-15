@@ -69,20 +69,22 @@ typedef enum{
 extern std::map<CableStatus , String> protocolCableStatus;
 
 typedef enum{
-    CP_Status_A1 = 0xA1,		//To EVCC :12V
-	CP_Status_B1 = 0xB1,		//To EVCC :9V   ,plugin
-	CP_Status_C1 = 0xC1,		
-	CP_Status_A2 = 0xA2,		
-	CP_Status_B2 = 0xB2,		//To EVCC :9V   ,?plugin
-	CP_Status_C2 = 0xC2,		//To EVCC :6V   ,s2 
-	CP_Status_E = 0x0E,         //INVALID
-    CP_Status_F = 0x0F          //UNKNOWN
+    CP_Status_UNKNOWN,  //状态未知
+    CP_Status_A,		//To EVCC :12V
+	CP_Status_B,		//To EVCC :9V   ,plugin
+	CP_Status_C,	    //To EVCC :6V   ,s2
+    CP_Status_D,	
+	CP_Status_E,         
+    CP_Status_F,        
+    CP_Status_INVALID   //INVALID
 }CPStatus;
 extern std::map<CPStatus , String> protocolCPStatus;
 
 typedef enum{
+    LockStatus_UNKNOWN,
     locked,
-    unlocked
+    unlocked,
+    LockStatus_INVALID
 }LockStatus;  //电子锁状态
 extern std::map<LockStatus , String> protocolLockStatus;
 
@@ -135,7 +137,6 @@ typedef enum{
     //Inoperative,
     //operative
     INOPERATIVE,
-    INOPERATIVE_SCHEDULED,
     OPERATIVE
 }ChangeAvailabilityNtfStatus;
 
@@ -171,6 +172,7 @@ extern std::map<ResetType , String> protocolResetType;
 struct Payload_AuthorizeReq
 {
     ProtocolCommand CmdID = ProtocolCommand_Authorizereq;
+    uint8_t Length;
     char Idtag[20] = {0,};
     uint8_t connectorID;
 };

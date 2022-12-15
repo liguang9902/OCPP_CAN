@@ -13,7 +13,7 @@ const uint32_t newProtocolCommand[ProtocolCommand_MAX][1]=
     0x131A132,
     0x20032A1,
     0x211A132,
-    0x32532A1,
+    0x32432A1,
     0x330A132,
     0x42432A1,
     0x430A132,
@@ -46,19 +46,21 @@ std::map<CableStatus , String> protocolCableStatus{
 };
 
 std::map<CPStatus , String> protocolCPStatus{
-    {CP_Status_A1,"A1"},	
-	{CP_Status_B1,"B1"},		
-	{CP_Status_C1,"C1"},		
-	{CP_Status_A2,"A2"},		
-	{CP_Status_B2,"B2"},		
-	{CP_Status_C2,"C2"},		
-	{CP_Status_E,"INVALID"},
-    {CP_Status_F,"UNKNOWN"}
+    {CP_Status_UNKNOWN,"UNKNOWN"},	
+	{CP_Status_A,"A"},		
+	{CP_Status_B,"B"},		
+	{CP_Status_C,"C"},		
+	{CP_Status_D,"D"},				
+	{CP_Status_E,"E"},
+    {CP_Status_F,"F"},
+    {CP_Status_INVALID,"INVALID"},
 };
 
 std::map<LockStatus , String> protocolLockStatus{
+    {LockStatus_UNKNOWN,"UNKNOWN"},
     {locked,"locked"},
-    {unlocked,"unlocked"}
+    {unlocked,"unlocked"},
+    {LockStatus_INVALID,"INVALID"},
 };
 
 std::map<StopCharingReason , String> protocolStopCharingReason{

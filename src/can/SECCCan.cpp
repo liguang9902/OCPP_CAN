@@ -59,7 +59,9 @@ void EVSEModelCan::CanProtocol_AuthorizeReq(Payload_AuthorizeReq& payload){
         {
             
             strcpy(SavedPacket,CanPacketSave[CanID].c_str());
-            for (size_t i = 0; i < 8; i++)
+            payload.connectorID = (int)SavedPacket[0];
+            payload.Length = (int)SavedPacket[1];
+            for (size_t i = 4; i < 8; i++)
             {
             //payload.Idtag[i] =(char)CAN.read();
             payload.Idtag[i] =SavedPacket[i];
@@ -81,17 +83,16 @@ void EVSEModelCan::CanProtocol_AuthorizeReq(Payload_AuthorizeReq& payload){
         if(CanPacketSave.count(CanID - frameID*2))
         {
             strcpy(SavedPacket,CanPacketSave[CanID - frameID*2].c_str());
-            for (size_t i = 16; i < 20; i++)
+            for (size_t i = 16; i < 24; i++)
             {
             payload.Idtag[i] =SavedPacket[i-16];
             }
-            payload.connectorID = (int)SavedPacket[4];
-            CanPacketSave.erase(CanID - frameID*2);
+            
         }
         
     //}
     String IDTag;
-    for (size_t i = 0; i < 20; i++)
+    for (size_t i = 0; i < (payload.Length-1); i++)
     {
         IDTag += payload.Idtag[i];
     }
@@ -269,38 +270,42 @@ void EVSEModelCan::CanProtocol_MeterValueNtf(Payload_MeterValueNtf& payload){
             payload.currentTime.tm_hour = (int)SavedPacket[4];
             payload.currentTime.tm_min = (int)SavedPacket[5];
             payload.currentTime.tm_sec = (int)SavedPacket[6];
+            Payload_MeterValueCnf MeterValueCnf;
+            Canpacket_ProtocolSend(MeterValueCnf);
             CanPacketSave.erase(CanID);
         }
     if(CanPacketSave.count(CanID- frameID))
         {
             strcpy(SavedPacket,CanPacketSave[CanID- frameID].c_str());
             payload.connectorID = (int)SavedPacket[0];
-            payload.L1Voltage = (float)SavedPacket[1]*100+(float)SavedPacket[2]+(float)SavedPacket[3]/100;
-            payload.L1Current = (float)SavedPacket[4]*100+(float)SavedPacket[5]+(float)SavedPacket[6]/100;
+            payload.TotalElectricity = ((float)((uint32_t)((SavedPacket[1]<<24) | (SavedPacket[2]<<16) | (SavedPacket[3]<<8) | SavedPacket[4])))/10;
             CanPacketSave.erase(CanID - frameID);
         }
     if(CanPacketSave.count(CanID- frameID*2))
         {
             strcpy(SavedPacket,CanPacketSave[CanID- frameID*2].c_str());
-            payload.L1Power = (float)SavedPacket[0]*100+(float)SavedPacket[1]+(float)SavedPacket[2]/100;
-            payload.L2Voltage = (float)SavedPacket[3]*100+(float)SavedPacket[4]+(float)SavedPacket[5]/100;
+            payload.L1Voltage = ((float)((uint16_t)((SavedPacket[0]<<8) | SavedPacket[1])))/100;
+            payload.L1Current = ((float)((uint16_t)((SavedPacket[2]<<8) | SavedPacket[3])))/100;
+            payload.L1Power = ((float)((uint32_t)((SavedPacket[4]<<24) | (SavedPacket[5]<<16) | (SavedPacket[6]<<8) | SavedPacket[7])))/10;
             CanPacketSave.erase(CanID - frameID*2);
         }    
     if(CanPacketSave.count(CanID- frameID*3))
         {
             strcpy(SavedPacket,CanPacketSave[CanID- frameID*3].c_str());
-            payload.L2Current = (float)SavedPacket[0]*100+(float)SavedPacket[1]+(float)SavedPacket[2]/100;
-            payload.L2Power = (float)SavedPacket[3]*100+(float)SavedPacket[4]+(float)SavedPacket[5]/100;
+            payload.L2Voltage =((float)((uint16_t)((SavedPacket[0]<<8) | SavedPacket[1])))/100;
+            payload.L2Current =((float)((uint16_t)((SavedPacket[2]<<8) | SavedPacket[3])))/100;
+            payload.L2Power = ((float)((uint32_t)((SavedPacket[4]<<24) | (SavedPacket[5]<<16) | (SavedPacket[6]<<8) | SavedPacket[7])))/10;
             CanPacketSave.erase(CanID - frameID*3);
         }        
     if(CanPacketSave.count(CanID- frameID*4))
         {
             strcpy(SavedPacket,CanPacketSave[CanID- frameID*4].c_str());
-            payload.L3Voltage = (float)SavedPacket[0]*100+(float)SavedPacket[1]+(float)SavedPacket[2]/100;
-            payload.L3Current = (float)SavedPacket[3]*100+(float)SavedPacket[4]+(float)SavedPacket[5]/100;
+            payload.L3Voltage = ((float)((uint16_t)((SavedPacket[0]<<8) | SavedPacket[1])))/100;
+            payload.L3Current = ((float)((uint16_t)((SavedPacket[2]<<8) | SavedPacket[3])))/100;
+            payload.L3Power =  ((float)((uint32_t)((SavedPacket[4]<<24) | (SavedPacket[5]<<16) | (SavedPacket[6]<<8) | SavedPacket[7])))/10;
             CanPacketSave.erase(CanID - frameID*4);
         }    
-    if(CanPacketSave.count(CanID- frameID*5))
+    /*if(CanPacketSave.count(CanID- frameID*5))
         {
             strcpy(SavedPacket,CanPacketSave[CanID- frameID*5].c_str());
             payload.L3Power = (float)SavedPacket[0]*100+(float)SavedPacket[1]+(float)SavedPacket[2]/100;
@@ -308,10 +313,10 @@ void EVSEModelCan::CanProtocol_MeterValueNtf(Payload_MeterValueNtf& payload){
             Payload_MeterValueCnf MeterValueCnf;
             Canpacket_ProtocolSend(MeterValueCnf);
             CanPacketSave.erase(CanID- frameID*5);
-        }    
+        }    */
     //char strftime_buf[64]={0,};
     //strftime(strftime_buf, 64, "%FT%T", &payload.currentTime);
-    MeterValueTimestamp = payload.currentTime; //还有问题
+    MeterValueTimestamp = payload.currentTime; 
     MeterValueCID = payload.connectorID;
     L1Voltage = payload.L1Voltage;L1Current = payload.L1Current;L1Power = payload.L1Power;
     L2Voltage = payload.L2Voltage;L2Current = payload.L2Current;L2Power = payload.L2Power;

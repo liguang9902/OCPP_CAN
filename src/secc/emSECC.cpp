@@ -384,22 +384,22 @@ void EMSECC::seccInitialize(void *param)
     uint8_t CPstatus = Canmodel.getCPstatus();
     switch (CPstatus)
     {
-    case CP_Status_E:
+    case CP_Status_INVALID:
       ESP_LOGE(TAG_EMSECC, "EVSE Reported CP error State:%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       setFsmState(SECC_State_SuspendedEVSE, NULL);
       break;
-    case CP_Status_F:
+    case CP_Status_UNKNOWN:
       ESP_LOGW(TAG_EMSECC, "EVSE CP State Unknown! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       break;
-    case CP_Status_A1:
+    case CP_Status_A:
       ESP_LOGI(TAG_EMSECC, "EVSE CP State unPlugin! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       this->evIsPlugged = false;
       break;
-    case CP_Status_B2:
+    case CP_Status_B:
       ESP_LOGI(TAG_EMSECC, "EVSE CP State Plugin! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       this->evIsPlugged = true;
       break;
-    case CP_Status_C2:
+    case CP_Status_C:
       ESP_LOGI(TAG_EMSECC, "EVSE CP State S2! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       this->evIsPlugged = true;
       this->evRequestsEnergy = true;
@@ -578,22 +578,22 @@ void EMSECC::seccInitialize(void *param)
     uint8_t CPstatus = Canmodel.getCPstatus();
     switch (CPstatus)
     {
-    case CP_Status_E:
+    case CP_Status_INVALID:
       ESP_LOGE(TAG_EMSECC, "EVSE Reported CP error State:%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       setFsmState(SECC_State_SuspendedEVSE, NULL);
       break;
-    case CP_Status_F:
+    case CP_Status_UNKNOWN:
       ESP_LOGW(TAG_EMSECC, "EVSE CP State Unknown! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       break;
-    case CP_Status_A1:
+    case CP_Status_A:
       ESP_LOGI(TAG_EMSECC, "EVSE CP State unPlugin! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       this->evIsPlugged = false;
       break;
-    case CP_Status_B2:
+    case CP_Status_B:
       ESP_LOGI(TAG_EMSECC, "EVSE CP State Plugin! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       this->evIsPlugged = true;
       break;
-    case CP_Status_C2:
+    case CP_Status_C:
       ESP_LOGI(TAG_EMSECC, "EVSE CP State S2! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       this->evIsPlugged = true;
       this->evRequestsEnergy = true;
@@ -696,22 +696,22 @@ void EMSECC::seccInitialize(void *param)
     uint8_t CPstatus = Canmodel.getCPstatus();
     switch (CPstatus)
     {
-    case CP_Status_E:
+    case CP_Status_INVALID:
       ESP_LOGE(TAG_EMSECC, "EVSE Reported CP error State:%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       setFsmState(SECC_State_SuspendedEVSE, NULL);
       break;
-    case CP_Status_F:
+    case CP_Status_UNKNOWN:
       ESP_LOGW(TAG_EMSECC, "EVSE CP State Unknown! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       break;
-    case CP_Status_A1:
+    case CP_Status_A:
       ESP_LOGI(TAG_EMSECC, "EVSE CP State unPlugin! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       this->evIsPlugged = false;
       break;
-    case CP_Status_B2:
+    case CP_Status_B:
       ESP_LOGI(TAG_EMSECC, "EVSE CP State Plugin! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       this->evIsPlugged = true;
       break;
-    case CP_Status_C2:
+    case CP_Status_C:
       ESP_LOGI(TAG_EMSECC, "EVSE CP State S2! :%s(%d)\r\n", protocolCPStatus[(CPStatus)CPstatus], CPstatus);
       this->evIsPlugged = true;
       this->evRequestsEnergy = true;
@@ -904,7 +904,7 @@ void EMSECC::seccInitialize(void *param)
         activeImport += (float) emEVSE->getTotalEnergy();
         activeImport += (float) emEVSE->getSessionEnergy();
         return activeImport;*/
-        return Canmodel.getTotalElectricity();//消耗的总电量
+        return Canmodel.getTotalElectricity()*1000;//消耗的总电量 将KWh转化为Wh
        /* static ulong lastSampled = millis();
                                    static float energyMeter = 0.f;
                                    if (getTransactionId() > 0 && 1)                           // digitalRead(EV_CHARGE_PIN) == EV_CHARGING
