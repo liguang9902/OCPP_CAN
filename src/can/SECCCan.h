@@ -13,6 +13,7 @@ class EVSEModelCan
 {
 private:
 
+    int IDtaglength = 20;
     String chargePointModel;
     int connectorNum;
     String chargePointSerialNumber;

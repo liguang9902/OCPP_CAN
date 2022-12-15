@@ -137,6 +137,7 @@ typedef enum{
     //Inoperative,
     //operative
     INOPERATIVE,
+    
     OPERATIVE
 }ChangeAvailabilityNtfStatus;
 
@@ -172,7 +173,7 @@ extern std::map<ResetType , String> protocolResetType;
 struct Payload_AuthorizeReq
 {
     ProtocolCommand CmdID = ProtocolCommand_Authorizereq;
-    uint8_t Length;
+    uint8_t Length = 20;
     char Idtag[20] = {0,};
     uint8_t connectorID;
 };

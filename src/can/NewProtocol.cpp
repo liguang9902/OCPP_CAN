@@ -53,14 +53,14 @@ std::map<CPStatus , String> protocolCPStatus{
 	{CP_Status_D,"D"},				
 	{CP_Status_E,"E"},
     {CP_Status_F,"F"},
-    {CP_Status_INVALID,"INVALID"},
+    {CP_Status_INVALID,"INVALID"}
 };
 
 std::map<LockStatus , String> protocolLockStatus{
     {LockStatus_UNKNOWN,"UNKNOWN"},
     {locked,"locked"},
     {unlocked,"unlocked"},
-    {LockStatus_INVALID,"INVALID"},
+    {LockStatus_INVALID,"INVALID"}
 };
 
 std::map<StopCharingReason , String> protocolStopCharingReason{
