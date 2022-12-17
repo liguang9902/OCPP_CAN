@@ -85,6 +85,7 @@ void setOnUnlockConnector(std::function<bool()> unlockConnector); //true: succes
 void setOnSetChargingProfileRequest(OnReceiveReqListener onReceiveReq); //optional
 
 void setOnRemoteStartTransactionSendConf(OnSendConfListener onSendConf); //important, energize the power plug here and capture the idTag
+void setOnRemoteStartTransactionReceiveReq(OnReceiveReqListener onReceiveReq);
 
 void setOnRemoteStopTransactionSendConf(OnSendConfListener onSendConf); //important, de-energize the power plug here
 void setOnRemoteStopTransactionReceiveReq(OnReceiveReqListener onReceiveReq); //optional, to de-energize the power plug immediately

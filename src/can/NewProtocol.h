@@ -290,6 +290,7 @@ struct Payload_RemoteStartReq
     ProtocolCommand CmdID = ProtocolCommand_RemoteStartReq;
     char Idtag[20] = {0,};
     uint8_t connectorID;
+    uint8_t Length = 20;
 };
 
 struct Payload_RemoteStartRes
@@ -365,4 +366,5 @@ void Canunpacket_ProtocolRes(T& payload );
 
 void initialiSavedAvailablityStatus();
 
+char AsciiToHex(char AsciiValueTOP,char AsciiValueBtm);
 #endif

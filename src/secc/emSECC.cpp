@@ -445,7 +445,7 @@ void EMSECC::seccInitialize(void *param)
         //this->authStatus.authorizationProvided = (uint8_t)resGetRfidState.StateRFID;
         this->authStatus.rfidTag.clear();
         this->authStatus.rfidTag.concat(Canmodel.getAuthorizeidtag().c_str());
-        ESP_LOGD(TAG_EMSECC, "EVSEState [RFID:%s]", this->authStatus.rfidTag.c_str());
+        ESP_LOGD(TAG_EMSECC, "EVSEState [RFID:(%d)%s]", Canmodel.getIDtaglength()*2, this->authStatus.rfidTag.c_str());
         Canmodel.authorizeFlag = false;
       }
       else
@@ -471,7 +471,7 @@ void EMSECC::seccInitialize(void *param)
               string authConfirm;
               if (serializeJson(confMsg, authConfirm))
               {
-                ESP_LOGD(TAG_EMSECC, "Tag=%s Authorized response confirm: %s \r\n", authStatus.rfidTag, authConfirm.c_str());
+                ESP_LOGD(TAG_EMSECC, "Tag=%s Authorized response confirm: %s \r\n", authStatus.rfidTag.c_str(), authConfirm.c_str());
               };
 
               if (confMsg.containsKey("idTagInfo"))
@@ -968,9 +968,10 @@ void EMSECC::seccInitialize(void *param)
     });
 
  
-    setOnResetSendConf([] (JsonObject payload) 
+    setOnResetReceiveReq([] (JsonObject payload) 
     {   
         const char *type = payload["type"] | "Soft";
+        Serial.println(type);
         if (!strcmp(type, "Hard")) {
             Payload_ResetReq ResetReqHard;
             Canpacket_ProtocolSend(ResetReqHard,payload);
@@ -994,7 +995,12 @@ void EMSECC::seccInitialize(void *param)
         
 
     //远程开启交易的反馈
-     setOnRemoteStartTransactionSendConf([this](JsonObject payload){
+     setOnRemoteStartTransactionReceiveReq([this](JsonObject payload){
+      string authConfirm;
+      if (serializeJson(payload, authConfirm))
+      {
+        ESP_LOGD(TAG_EMSECC, "response confirm: %s \r\n", authConfirm.c_str());
+      };
         const char *connectorId =payload["connectorId"];
         const char *idtag = payload["idTag"] ;
 
@@ -1015,7 +1021,7 @@ void EMSECC::seccInitialize(void *param)
     });
   
 
-      setOnRemoteStopTransactionSendConf([this](JsonObject payload){
+      setOnRemoteStopTransactionReceiveReq([this](JsonObject payload){
         if(getTransactionId()>0){
           Payload_RemoteStopReq RemoteStopReq;
           Canpacket_ProtocolSend(RemoteStopReq,payload);//向LPC发送远程停止指令

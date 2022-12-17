@@ -61,53 +61,58 @@ void EVSEModelCan::CanProtocol_AuthorizeReq(Payload_AuthorizeReq& payload){
             memcpy(SavedPacket,CanPacketSave[CanID].c_str(),8);
             payload.connectorID = (int)SavedPacket[0];
             payload.Length = (int)SavedPacket[1];
-            for (size_t i = 4; i < 8; i++)
+            for (size_t i = 0; i < 4; i++)
             {
             //payload.Idtag[i] =(char)CAN.read();
-            payload.Idtag[i] =SavedPacket[i];
+            payload.Idtag[i] =SavedPacket[i+4];
             }
-            authorizeFlag = true;
+            
             CanPacketSave.erase(CanID);
         }
         
         if(CanPacketSave.count(CanID - frameID))
         {
             memcpy(SavedPacket,CanPacketSave[CanID - frameID].c_str(),8);
-            for (size_t i = 8; i < 16; i++)
+            for (size_t i = 4; i < 12; i++)
             {
             //payload.Idtag[i] =(char)CAN.read();
-            payload.Idtag[i] =SavedPacket[i-8];
+            payload.Idtag[i] =SavedPacket[i-4];
             }
             CanPacketSave.erase(CanID - frameID);
         }
         if(CanPacketSave.count(CanID - frameID*2))
         {
             memcpy(SavedPacket,CanPacketSave[CanID - frameID*2].c_str(),8);
-            for (size_t i = 16; i < 24; i++)
+            for (size_t i = 12; i < 20; i++)
             {
-            payload.Idtag[i] =SavedPacket[i-16];
+            payload.Idtag[i] =SavedPacket[i-12];
             }
-            
+            authorizeFlag = true;
             CanPacketSave.erase(CanID - frameID*2);
         }
         
     //}
     String IDTag;
     IDtaglength = payload.Length;
-    for (size_t i = 0; i < IDtaglength; i++)
+    /*for (size_t i = 0; i < IDtaglength; i++)
     {
         IDTag += payload.Idtag[i];
-    }
+    }*/
+    for (size_t i = 0; i < IDtaglength; i++)
+   {
+        IDTag += HexToAscii(payload.Idtag[i]);
+   }
+   
+    
     Authorizeidtag = IDTag;
     AuthorizeCID = payload.connectorID;
+    
     /*
-    if (idtag!=NULL)
-    {
-    Serial.print(" IDTag: ");
-    Serial.println(idtag);
-    Serial.println(payload.connectorID);
-    }
+    Serial.println(IDtaglength);
+    Serial.println(Authorizeidtag);
+    Serial.println(payload.Idtag);
     */
+    
 }
 
 
@@ -676,6 +681,41 @@ String EVSEModelCan::getUnlockconnectorStatus(){
 
 float EVSEModelCan::getTotalElectricity(){
     return TotalElectricity;
+}
+
+int EVSEModelCan::getIDtaglength(){
+    return IDtaglength;
+}
+
+String EVSEModelCan::HexToAscii(char HexValue)
+{    
+    uint8_t HexTop, HexBtm;
+    uint8_t AsciiTop,AsciiBtm;
+
+    HexTop = HexValue / 16;
+    HexBtm = HexValue % 16;
+    
+	if((HexTop>=0)&&(HexTop<=9))	        AsciiTop = HexTop + 0x30;
+	else if((HexTop>=10)&&(HexTop<=15))     AsciiTop = HexTop + 0x37;
+	else                                    AsciiTop = 0xff;
+		
+	if((HexBtm>=0)&&(HexBtm<=9))	        AsciiBtm = HexBtm + 0x30;
+	else if((HexBtm>=10)&&(HexBtm<=15))     AsciiBtm = HexBtm + 0x37;
+	else                                    AsciiBtm = 0xff;
+	char temp[2];
+    //Serial.println((char)AsciiTop);
+    //Serial.println((char)AsciiBtm);
+    temp[0]=(char)AsciiTop;
+    temp[1]=(char)AsciiBtm;
+    String str;
+    for (size_t i = 0; i < 2; i++)
+    {
+        str += temp[i];
+    }
+     
+    //str = temp;
+    //Serial.println(str);
+	return str;
 }
 
 EVSEModelCan  Canmodel;

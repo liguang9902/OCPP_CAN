@@ -112,6 +112,8 @@ public:
     String getRemoteStopStatus();
     String getResetStatus();
     String getUnlockconnectorStatus();
+    int getIDtaglength();
+    String HexToAscii(char HexValue);
 };
 
 extern EVSEModelCan  Canmodel;

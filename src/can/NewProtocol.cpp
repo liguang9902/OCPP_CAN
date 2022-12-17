@@ -316,32 +316,48 @@ template<>
 void Canpacket_ProtocolSend<Payload_RemoteStartReq>(Payload_RemoteStartReq& payload,JsonObject confMsg){
     //payload.connectorID = cID;
     //strcpy(payload.Idtag,ID.c_str());
-    payload.connectorID = confMsg["connectorId"] | -1;
-    strcpy(payload.Idtag,confMsg["idTag"] | "INVALID");
+    payload.connectorID = confMsg["connectorId"] | 0xFF;
+    string str;
+    //payload.Length = str.length();
+    char temp[20];
+    strcpy(temp,confMsg["idTag"] | "INVALID");
+    str = temp;
+    payload.Length = str.length();
+    //strcpy(payload.Idtag,confMsg["idTag"]);
+    for (size_t i = 0; i < payload.Length/2; i++)
+    {   
+        payload.Idtag[i] = AsciiToHex(temp[i*2],temp[i*2+1]);
+    }
+
+    
 
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
     CAN.beginExtendedPacket(CanID, 8);
-    for (size_t i = 0; i < 8; i++)
-    {
-        CAN.write(payload.Idtag[i]);
-    }
-    CAN.endPacket();
-
-    CanID = CanID-frameID;
-    CAN.beginExtendedPacket(CanID, 8);
-    for (size_t i = 8; i < 16; i++)
-    {
-        CAN.write(payload.Idtag[i]);
-    }
-    CAN.endPacket();
-
-    CanID = CanID-frameID;
-    CAN.beginExtendedPacket(CanID, 8);
-    for (size_t i = 16; i < 20; i++)
-    {
-        CAN.write(payload.Idtag[i]);
-    }
     CAN.write(payload.connectorID);
+    CAN.write(payload.Length/2);
+    CAN.write(0x00);
+    CAN.write(0x00);
+    for (size_t i = 0; i < 4; i++)
+    {
+        CAN.write(payload.Idtag[i]);
+    }
+    CAN.endPacket();
+
+    CanID = CanID-frameID;
+    CAN.beginExtendedPacket(CanID, 8);
+    for (size_t i = 4; i < 12; i++)
+    {
+        CAN.write(payload.Idtag[i]);
+    }
+    CAN.endPacket();
+
+    CanID = CanID-frameID;
+    CAN.beginExtendedPacket(CanID, 8);
+    for (size_t i = 12; i < 20; i++)
+    {
+        CAN.write(payload.Idtag[i]);
+    }
+    
     CAN.endPacket();
     
 }
@@ -349,7 +365,7 @@ void Canpacket_ProtocolSend<Payload_RemoteStartReq>(Payload_RemoteStartReq& payl
 template<>
 void Canpacket_ProtocolSend<Payload_RemoteStopReq>(Payload_RemoteStopReq& payload,JsonObject confMsg){
     //payload.connectorID = cID;
-    payload.connectorID = confMsg["connectorId"] | -1;
+    payload.connectorID = confMsg["connectorId"] | 1;
 
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
     CAN.beginExtendedPacket(CanID, 8);
@@ -372,12 +388,28 @@ void Canpacket_ProtocolSend<Payload_ResetReq>(Payload_ResetReq& payload,JsonObje
 template<>
 void Canpacket_ProtocolSend<Payload_UnlockConnectorReq>(Payload_UnlockConnectorReq& payload){
     //payload.connectorID = cID;
-    //payload.connectorID = confMsg["connectorId"] | -1;
+    //payload.connectorID = confMsg["connectorId"] | 1;
     payload.connectorID = ID_OF_CONNECTOR;
     uint32_t CanID = *newProtocolCommand[payload.CmdID];
     CAN.beginExtendedPacket(CanID, 8);
     CAN.write(payload.connectorID);
     CAN.endPacket();
+}
+
+char AsciiToHex(char AsciiValueTOP,char AsciiValueBtm){
+    uint8_t HexTop, HexBtm;
+    uint8_t AsciiTop,AsciiBtm;
+    
+	if((AsciiValueTOP>='0')&&(AsciiValueTOP<='9'))	        HexTop = AsciiValueTOP - 0x30;
+	else if((AsciiValueTOP>='A')&&(AsciiValueTOP<='F'))     HexTop = AsciiValueTOP - 0x37;
+	else                                    HexTop = 0xff;
+		
+	if((AsciiValueBtm>='0')&&(AsciiValueBtm<='9'))	        HexBtm = AsciiValueBtm - 0x30;
+	else if((AsciiValueBtm>='A')&&(AsciiValueBtm<='F'))     HexBtm = AsciiValueBtm - 0x37;
+	else                                    HexBtm = 0xff;
+
+    return (char)(HexTop*16+HexBtm);
+
 }
 /*
 template<>
