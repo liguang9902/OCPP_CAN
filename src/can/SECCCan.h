@@ -80,6 +80,7 @@ public:
 
     bool authorizeFlag = false;
     bool BootFlag = false;
+    bool StopcharingFlag = false; 
     std::map<uint32_t,String> CanPacketSave;
     String getchargePointModel();
     int getconnectorNum();

@@ -739,9 +739,15 @@ void EMSECC::seccInitialize(void *param)
       return;
     }
 
-    if (!evIsPlugged || !evRequestsEnergy || !evIsLock)
-      
+    if (!evIsPlugged || !evRequestsEnergy || !evIsLock){
       setFsmState(SECC_State_Finishing, NULL);
+    }
+      
+    if(Canmodel.StopcharingFlag)
+    {
+      setFsmState(SECC_State_Finishing, NULL);
+      Canmodel.StopcharingFlag = false;
+    }  
   };
 
   void EMSECC::seccFinance(void *param)

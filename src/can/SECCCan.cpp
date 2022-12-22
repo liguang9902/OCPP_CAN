@@ -44,7 +44,7 @@ void EVSEModelCan::loop(){
     CanProtocol_ResetRes(ResetRes);
     CanProtocol_UnlockConnectorRes(UnlockConnectorRes);
     
-    //Canpacket_ProtocolSend(ChangeAvailabilityNtf);
+    Canpacket_ProtocolSend(ChangeAvailabilityNtf);
 }
 
 void EVSEModelCan::CanProtocol_AuthorizeReq(Payload_AuthorizeReq& payload){
@@ -357,6 +357,7 @@ void EVSEModelCan::CanProtocol_StopChargingNtf(Payload_StopChargingNtf& payload)
             } 
             Payload_StopChargingCnf StopChargingCnf;
             Canpacket_ProtocolSend(StopChargingCnf);
+            StopcharingFlag = true;
             CanPacketSave.erase(CanID);
         }
     if(CanPacketSave.count(CanID - frameID))

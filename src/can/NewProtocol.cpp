@@ -294,20 +294,24 @@ void initialiSavedAvailablityStatus(){
     }
 }
 
+uint8_t lastAvailability = OPERATIVE;
 template<>
 void Canpacket_ProtocolSend<Payload_ChangeAvailabilityNtf>(Payload_ChangeAvailabilityNtf& payload){
     ArduinoOcpp::ChargePointStatusService *CPSService = getChargePointStatusService();
 
-    for (int i = 0; i < CPSService->getNumConnectors(); i++) {
+    for (int i = 1; i < CPSService->getNumConnectors(); i++) {
         //if(CPSService->getConnector(i)->getAvailability()!=SavedAvailablityStatus[i]){
         payload.connectorID = i;
-        payload.CAReqstatus = (ChangeAvailabilityNtfStatus)CPSService->getConnector(i)->getAvailability();//
-
+        payload.CAReqstatus = (ChangeAvailabilityNtfStatus)CPSService->getConnector(i)->getAvailability();
+        if (payload.CAReqstatus != lastAvailability)
+        {
         uint32_t CanID = *newProtocolCommand[payload.CmdID];
         CAN.beginExtendedPacket(CanID, 8);
         CAN.write(payload.connectorID);
         CAN.write(payload.CAReqstatus);
         CAN.endPacket();
+        lastAvailability = payload.CAReqstatus;
+        }
         //}
     }
 }  

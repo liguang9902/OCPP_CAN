@@ -137,7 +137,7 @@ typedef enum{
     //Inoperative,
     //operative
     INOPERATIVE,
-    
+    INOPERATIVE_SCHEDULED,
     OPERATIVE
 }ChangeAvailabilityNtfStatus;
 
